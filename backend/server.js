@@ -14,7 +14,28 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Enable Cross-Origin Resource Sharing (CORS)
-app.use(cors());
+// In production, configure CORS_ORIGIN in .env as comma-separated origins (e.g., https://yourfrontend.com)
+// In development or when unconfigured, allows requests from any origin
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+  : null;
+
+if (allowedOrigins && allowedOrigins.length > 0) {
+  app.use(
+    cors({
+      origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS policy: Access denied for origin ' + origin));
+        }
+      },
+      credentials: true,
+    })
+  );
+} else {
+  app.use(cors());
+}
 
 // Parse incoming requests with JSON payloads
 app.use(express.json());

@@ -3,7 +3,11 @@
  * Pure Vanilla JavaScript Fetch Wrapper
  */
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Configurable API base URL: supports window.__API_BASE_URL__ or window.APP_CONFIG.API_BASE_URL with fallback to local development
+const API_BASE_URL = (typeof window !== 'undefined' && (
+  (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ||
+  window.__API_BASE_URL__
+)) || 'http://localhost:5000/api';
 
 /**
  * Low-level HTTP request helper

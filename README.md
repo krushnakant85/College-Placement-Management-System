@@ -333,6 +333,114 @@ npx serve frontend
 
 ---
 
+## 🚀 Production Deployment
+
+> **Deployment Readiness Notice**: Deployment configuration is prepared; production hosting has not yet been configured.
+
+The following guide details the production architecture, hosting prerequisites, environment configuration, and deployment procedures for transitioning from local development to a live cloud or institutional production environment.
+
+### 1. Architecture Overview (Local vs. Production)
+
+| Dimension | Local Development | Production Deployment |
+| :--- | :--- | :--- |
+| **Frontend Delivery** | Static file opening or local server (`npx serve frontend`) | High-availability CDN / Static Hosting (Cloudflare Pages, Vercel, Netlify, or Nginx) |
+| **Backend Service** | Node.js process (`node backend/server.js`) | Containerized / Managed Process with auto-restart (PM2, Docker, AWS ECS, or Render) |
+| **Database** | Local MySQL instance (`localhost:3306`) | Managed cloud MySQL 8.0+ instance (AWS RDS, DigitalOcean Managed Database) |
+| **Java Engine** | Local JDK (`javac -d java/bin java/eligibility/*.java`) | Pre-compiled bytecode with OpenJDK 17+ JRE & automatic zero-downtime JS fallback |
+| **API Addressing** | Hardcoded default (`http://localhost:5000/api`) | Dynamic injection via `window.__API_BASE_URL__` or reverse proxy (`/api`) |
+| **CORS Policy** | Permissive (allows all origins for local testing) | Strict whitelist matching the production frontend origin via `CORS_ORIGIN` |
+| **Transport** | HTTP | Enforced HTTPS with TLS/SSL certificate |
+
+---
+
+### 2. Required Production Services
+1. **Node.js Application Runtime**: Node.js v18+ LTS with `npm`.
+2. **Managed MySQL Database**: MySQL 8.0+ with connection pooling enabled.
+3. **Java SE Runtime (JRE)**: OpenJDK 17+ or Oracle JRE for native eligibility engine execution.
+4. **Static Web Server / CDN**: Any modern static host to serve frontend HTML, CSS, and vanilla JS.
+
+---
+
+### 3. Production Environment Variables Reference
+
+Configure these environment variables in your production hosting dashboard or container environment (never commit real values to version control):
+
+```env
+# Node Environment
+NODE_ENV=production
+PORT=5000
+
+# CORS Whitelist (comma-separated production frontend domains)
+CORS_ORIGIN=https://placement.yourcollege.edu
+
+# Production MySQL Database Connection
+DB_HOST=your-production-db-host.internal
+DB_PORT=3306
+DB_USER=placement_prod_user
+DB_PASSWORD=your_strong_production_password
+DB_NAME=college_placement_system
+```
+
+---
+
+### 4. Database Setup & Migration
+1. Provision a production MySQL 8.0+ database.
+2. Execute the full relational schema and seed dataset from `database/schema.sql`:
+```bash
+mysql -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p <DB_NAME> < database/schema.sql
+```
+3. Verify the creation of all 8 core tables: `users`, `students`, `admins`, `companies`, `jobs`, `skills`, `student_skills`, and `applications`.
+
+---
+
+### 5. Backend Deployment Procedure
+1. Clone repository to backend host:
+```bash
+git clone https://github.com/krushnakant85/College-Placement-Management-System.git
+cd College-Placement-Management-System
+```
+2. Install production dependencies:
+```bash
+cd backend
+npm install --omit=dev
+cd ..
+```
+3. Pre-compile the Java Eligibility Engine:
+```bash
+javac -d java/bin java/eligibility/*.java
+```
+4. Launch with production process supervisor (e.g. PM2):
+```bash
+pm2 start backend/server.js --name "placement-api" --time
+pm2 save
+```
+5. Verify health check: `curl https://api.yourdomain.com/api/test`
+
+---
+
+### 6. Frontend Deployment & API Configuration
+1. Deploy the `frontend/` directory to your static web host (e.g., Cloudflare Pages, Netlify, Vercel, or AWS S3).
+2. Configure the production API base URL by setting `window.__API_BASE_URL__` before loading `js/api.js`, or configure a reverse proxy routing `/api/*` to the backend server.
+3. Ensure SSL/TLS is active so all requests travel over HTTPS.
+
+---
+
+### 7. Java Eligibility Engine in Production
+- The backend spawns `java -cp java/bin eligibility.Main` via child process standard I/O.
+- If the host environment lacks Java or experiences a timeout (>5000ms), `backend/services/javaEligibilityService.js` seamlessly invokes an internal, mathematically identical JavaScript fallback to guarantee 100% service availability.
+
+---
+
+### 8. Production Security Hardening
+- **Secret Protection**: Verify that `backend/.env` is excluded via `.gitignore` and not stored in git.
+- **SQL Injection Defense**: All database queries utilize parameterized prepared statements via `mysql2`.
+- **Password Security**: Passwords use bcrypt hashing with 10 salt rounds and are never exposed in API payloads.
+- **CORS Protection**: Access is restricted strictly to designated institution domains.
+
+*For complete step-by-step instructions, see the [Production Deployment Checklist](DEPLOYMENT.md).*
+
+---
+
 ## 🧪 Testing & Verification
 
 The system was verified using automated test suites covering all system layers:
