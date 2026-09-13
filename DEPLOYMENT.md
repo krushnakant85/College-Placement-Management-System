@@ -59,79 +59,127 @@ The backend is an Express.js REST API located in `backend/`.
 
 ---
 
-### C. Production MySQL Database Preparation & Setup Guide
+### C. Production MySQL Database Preparation & Setup Guide (Aiven MySQL)
 
-> **Provider Selection Notice**: No external cloud database provider has been selected automatically. The user must manually choose and create a production MySQL 8.0+ database (e.g. AWS RDS MySQL, DigitalOcean Managed Database, Aiven, PlanetScale, or an institutional server). The local database (\`localhost:3306\`) is for local development only and must not be treated as the production database.
+> **Provider Notice**: **Aiven MySQL** is the designated production cloud database provider for the College Placement Management System. Aiven provides managed MySQL 8.x with TLS/SSL encryption. The local database (`localhost:3306`) is strictly for local development and testing. Real credentials must never be committed to Git.
 
-Follow these 10 steps (A through J) to prepare and initialize the production database:
+Follow this exact 10-step manual procedure (A through J) to provision and configure the Aiven MySQL database:
 
-1. **A. Create a Production MySQL Database**:
-   - Log into your chosen cloud provider console (e.g., AWS RDS, DigitalOcean, Aiven, or private VPS).
-   - Create a MySQL 8.0+ instance configured with UTF-8 (\`utf8mb4\`) character set and a robust root/admin password.
-   - Configure firewall or security groups to allow inbound MySQL traffic from your backend hosting provider's IP range or VPC.
+#### 1. Manual Aiven Provisioning Procedure (Steps A through J)
 
-2. **B. Obtain the Production Database Host**:
-   - Copy the public or private endpoint address (e.g. \`<production-db-host>\`).
+1. **A. Open Aiven**: Navigate to [https://console.aiven.io/](https://console.aiven.io/) in your web browser.
+2. **B. Create / Sign Into Account**: Sign up for a new account or log into your existing Aiven account.
+3. **C. Create a New Project**: In the top project dropdown, click **Create Project** (e.g., `placement-system-prod`).
+4. **D. Create a MySQL Service**: Click **Create service** and choose **MySQL** (MySQL 8.x engine).
+5. **E. Select Plan**: Select the **Free plan** (if available) or the lowest-tier developer plan (Startup/Hobby).
+6. **F. Select Cloud & Region**: Select a cloud provider (AWS / GCP / Azure) and geographic region closest to where your backend will be hosted (e.g., `us-east-1`, `eu-west-1`, or `ap-south-1`).
+7. **G. Create the Service**: Assign a descriptive service name (e.g., `mysql-placement-prod`) and click **Create service**.
+8. **H. Wait for RUNNING Status**: Monitor the dashboard until the service state changes from *Rebuilding/Initializing* to **RUNNING** (typically 2–4 minutes).
+9. **I. Open Service Connection Information**:
+   - In the Aiven Console, open your service **Overview** tab.
+   - Locate the **Connection information** card (Host, Port, User, Password, Database Name, CA Certificate / SSL mode).
+10. **J. Record Connection Details Securely**:
+    - Record these values in a local password manager.
+    - **Never** paste them into code files, chat windows, public forums, or Git commits.
 
-3. **C. Obtain the Production Database Port**:
-   - The default MySQL port is \`3306\`. If your cloud provider assigns a custom port, note it down.
+#### 2. Required Production Environment Variables
 
-4. **D. Obtain the Production Database Username**:
-   - Obtain the administrative or application user (e.g. \`<production-db-user>\`).
+Configure the following variables in your production backend hosting provider dashboard (e.g. Render, Railway, AWS ECS), replacing the `<...>` placeholders with your actual Aiven connection details:
 
-5. **E. Obtain the Production Database Password**:
-   - Securely record the generated password (\`<production-db-password>\`). Never commit this secret into source control.
+```env
+DB_HOST=<Aiven host>
+DB_PORT=<Aiven port>
+DB_USER=<Aiven username>
+DB_PASSWORD=<Aiven password>
+DB_NAME=<Aiven database name>
+DB_SSL=true
+```
 
-6. **F. Create/Select the Database Name**:
-   - Select or create the database name (e.g. \`college_placement_system\` or \`<production-db-name>\`).
+> **IMPORTANT**:
+> - Aiven assigns a unique port (often high-range, e.g. `10000`–`30000`, or standard `3306`).
+> - Aiven requires TLS/SSL encrypted connections (`sslmode=REQUIRED`). Set `DB_SSL=true` so `backend/config/database.js` enables SSL pooling.
+> - These values must **ONLY** be entered into the hosting provider's environment-variable settings. **NEVER** commit a `.env` file to Git.
 
-7. **G. Import \`database/schema.sql\`**:
-   - From your local terminal or a CI/CD bastion machine, run the schema import command:
-     \`\`\`bash
-     mysql -h <production-db-host> -P 3306 -u <production-db-user> -p <production-db-name> < database/schema.sql
-     \`\`\`
-   - *(Alternatively, open MySQL Workbench or DBeaver connected to the cloud instance, open \`database/schema.sql\`, and execute all statements).*
+#### 3. Importing `database/schema.sql` into Aiven MySQL
 
-8. **H. Verify the Tables**:
-   - Connect to the production database and confirm all 8 relational tables were created successfully:
-     \`\`\`sql
-     SHOW TABLES;
-     \`\`\`
-   - Verified expected tables:
-     1. \`users\` (Authentication credentials and role ENUM)
-     2. \`students\` (Student academic profiles, roll numbers, CGPA, backlogs)
-     3. \`admins\` (Placement cell officers)
-     4. \`companies\` (Corporate recruitment partners)
-     5. \`jobs\` (Active campus placement drives and eligibility criteria)
-     6. \`skills\` (Master list of normalized technical competencies)
-     7. \`student_skills\` (Student technical skills junction table)
-     8. \`applications\` (Job application records and status pipeline)
+Once the Aiven service is `RUNNING`, import the canonical schema using either of the following methods:
 
-9. **I. Configure Backend Environment Variables**:
-   - In your backend hosting provider dashboard (e.g. Render, Railway, AWS ECS), set the following production environment variables using the credentials obtained above:
-     \`\`\`env
-     DB_HOST=<production-db-host>
-     DB_PORT=3306
-     DB_USER=<production-db-user>
-     DB_PASSWORD=<production-db-password>
-     DB_NAME=<production-db-name>
-     DB_SSL=<production-db-ssl-setting>
-     \`\`\`
-   *(Note: Set \`DB_SSL=true\` if your cloud provider enforces TLS/SSL encrypted connections, as on AWS RDS or DigitalOcean).*
+- **Method 1: MySQL Command-Line Client**:
+  ```bash
+  mysql -h <Aiven host> -P <Aiven port> -u <Aiven username> -p --ssl-mode=REQUIRED < database/schema.sql
+  ```
+  *(When prompted, enter your `<Aiven password>`).*
 
-10. **J. Test Database Connectivity**:
-    - Once the backend is started in production, verify connectivity via the live health check endpoint:
-      \`\`\`bash
-      curl https://<your-backend-domain>/api/test/database
-      \`\`\`
-    - Expected HTTP 200 response:
-      \`\`\`json
-      {
-        "success": true,
-        "message": "Database connection successful",
-        "data": [{"connection_test": 1}]
-      }
-      \`\`\`
+- **Method 2: GUI Database Client (MySQL Workbench / DBeaver)**:
+  1. Create a new MySQL connection with your Aiven Host, Port, Username, and Password.
+  2. In the SSL settings tab, set SSL Mode to **Require** or **Verify CA**.
+  3. Connect to the instance.
+  4. Open `database/schema.sql` and execute all statements.
+
+- **Method 3: Aiven Web Query Editor**:
+  1. In the Aiven Console service page, navigate to the **Query editor** tab.
+  2. Paste the contents of `database/schema.sql` and click **Run**.
+
+#### 4. Verifying Production Database & Tables
+
+After importing the schema, connect and execute read-only verification queries:
+
+```sql
+-- 1. Verify database exists
+SHOW DATABASES;
+
+-- 2. Select placement database
+USE college_placement_system;
+
+-- 3. Verify all 8 tables are present
+SHOW TABLES;
+```
+
+**Expected 8 Tables**:
+1. `users` (User authentication & role ENUM)
+2. `students` (Student academic profiles, roll numbers, CGPA, backlogs)
+3. `admins` (Placement cell officers)
+4. `companies` (Corporate recruitment partners)
+5. `jobs` (Active campus placement drives & eligibility criteria)
+6. `skills` (Master list of normalized technical competencies)
+7. `student_skills` (Student technical skills junction table)
+8. `applications` (Job application records & status pipeline)
+
+**Verify Foreign Key Relationships**:
+```sql
+SELECT
+    TABLE_NAME,
+    COLUMN_NAME,
+    CONSTRAINT_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM
+    INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE
+    REFERENCED_TABLE_SCHEMA = 'college_placement_system'
+    AND REFERENCED_TABLE_NAME IS NOT NULL;
+```
+
+#### 5. Network Security & Public Exposure Controls
+
+- **Allowed IP Addresses (IP Whitelisting)**: In Aiven Console -> Service Settings -> **Allowed IP addresses**, restrict incoming traffic strictly to the egress IP addresses or CIDR blocks of your production backend server (or VPC peering if on AWS/GCP). Do not leave open to `0.0.0.0/0` unless required during initial setup.
+- **SSL Enforcement**: All data in transit between the Express backend and Aiven is encrypted over TLS 1.2/1.3 via `DB_SSL=true`.
+- **Credential Segregation**: Only the production backend runner receives credentials at runtime via environment variables. No credentials are stored in code or repository assets.
+
+#### 6. Live Health Verification
+
+Once the backend is deployed with the Aiven environment variables configured, verify database connectivity:
+```bash
+curl https://<your-backend-domain>/api/test/database
+```
+Expected HTTP 200 response:
+```json
+{
+  "success": true,
+  "message": "Database connection successful",
+  "data": [{"connection_test": 1}]
+}
+```
 
 ---
 
