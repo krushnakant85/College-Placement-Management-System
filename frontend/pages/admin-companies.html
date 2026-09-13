@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Company Management | Admin Portal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="admin-dashboard.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>Placement Admin Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="admin-dashboard.html" class="nav-link ">Dashboard</a></li>
+        <li><a href="admin-companies.html" class="nav-link active">Companies</a></li>
+        <li><a href="admin-jobs.html" class="nav-link ">Jobs</a></li>
+        <li><a href="admin-students.html" class="nav-link ">Students</a></li>
+        <li><a href="admin-applications.html" class="nav-link ">Applications</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="admin-name-badge">Administrator</span>
+          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Header Row -->
+      <div class="page-header-row">
+        <div>
+          <h2>Partner Companies</h2>
+          <p class="form-hint">Register and maintain recruiting enterprise profiles and corporate contacts</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddCompanyModal()">
+          + Add New Company
+        </button>
+      </div>
+
+      <!-- Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Search Bar -->
+      <div class="filter-bar">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <input 
+            type="text" 
+            id="company-search" 
+            class="form-control search-input" 
+            placeholder="Search by company name, location..." 
+            style="flex: 1; min-width: 250px;"
+          >
+          <button class="btn btn-outline btn-sm" onclick="fetchCompanies()">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Companies Table Card -->
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div id="companies-loading" class="loading-container" style="padding: 3rem;">
+            <div class="loading-spinner-large"></div>
+            <p>Loading registered companies...</p>
+          </div>
+
+          <div id="companies-empty" class="empty-state" style="display: none; border: none;">
+            <div class="empty-state-icon">🏢</div>
+            <h3>No Companies Found</h3>
+            <p>There are currently no recruiting companies registered in the system. Click "+ Add New Company" to get started.</p>
+          </div>
+
+          <div id="companies-table-container" class="table-responsive" style="display: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">ID</th>
+                  <th>Company Name</th>
+                  <th>Location</th>
+                  <th>Website</th>
+                  <th>Description</th>
+                  <th style="width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="companies-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Add / Edit Company Modal -->
+  <div class="modal-backdrop" id="company-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="company-modal-title">Add Recruiting Company</h3>
+        <button class="modal-close" onclick="closeCompanyModal()" aria-label="Close">&times;</button>
+      </div>
+      <form id="company-form" novalidate>
+        <div class="modal-body">
+          <div id="company-modal-alert"></div>
+          <input type="hidden" id="modal-company-id">
+
+          <div class="form-group">
+            <label for="company-name-input" class="form-label">Company Name <span class="required">*</span></label>
+            <input type="text" id="company-name-input" class="form-control" placeholder="e.g. Google India" required>
+          </div>
+
+          <div class="form-group">
+            <label for="company-location-input" class="form-label">Headquarters / Location <span class="required">*</span></label>
+            <input type="text" id="company-location-input" class="form-control" placeholder="e.g. Bengaluru, India" required>
+          </div>
+
+          <div class="form-group">
+            <label for="company-website-input" class="form-label">Company Website URL</label>
+            <input type="url" id="company-website-input" class="form-control" placeholder="e.g. https://www.google.com">
+          </div>
+
+          <div class="form-group">
+            <label for="company-desc-input" class="form-label">Company Overview / Description</label>
+            <textarea id="company-desc-input" class="form-control" rows="3" placeholder="Brief overview of business domain and operations..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeCompanyModal()">Cancel</button>
+          <button type="submit" id="save-company-btn" class="btn btn-primary">Save Company</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Company Confirmation Modal -->
+  <div class="modal-backdrop" id="delete-company-modal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Deletion</h3>
+        <button class="modal-close" onclick="closeDeleteCompanyModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="delete-company-alert"></div>
+        <p>Are you sure you want to delete <strong id="delete-company-name">this company</strong>?</p>
+        <p class="form-hint" style="color: var(--danger-text);">
+          Note: Deletion will be rejected by the backend if active job drives depend on this company.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeDeleteCompanyModal()">Cancel</button>
+        <button type="button" id="confirm-delete-company-btn" class="btn btn-danger" onclick="executeDeleteCompany()">
+          Delete Company
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Training & Placement Cell.</p>
+      <ul class="footer-links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="javascript:void(0)" onclick="handleAdminLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    requireAdminAuth('admin-login.html');
+
+    let allCompanies = [];
+    let companyToDeleteId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchCompanies();
+      setupCompanySearch();
+    });
+
+    async function fetchCompanies() {
+      const loadingEl = document.getElementById('companies-loading');
+      const emptyEl = document.getElementById('companies-empty');
+      const tableContainer = document.getElementById('companies-table-container');
+
+      try {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableContainer.style.display = 'none';
+
+        const response = await window.api.adminAPI.getCompanies();
+        loadingEl.style.display = 'none';
+
+        if (response.success && response.data && Array.isArray(response.data.companies)) {
+          allCompanies = response.data.companies;
+          renderCompanies(allCompanies);
+        } else {
+          emptyEl.style.display = 'block';
+        }
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        showAlert('alert-container', 'Failed to load companies: ' + err.message, 'danger');
+      }
+    }
+
+    function renderCompanies(companies) {
+      const emptyEl = document.getElementById('companies-empty');
+      const tableContainer = document.getElementById('companies-table-container');
+      const tbody = document.getElementById('companies-tbody');
+
+      if (!companies || companies.length === 0) {
+        emptyEl.style.display = 'block';
+        tableContainer.style.display = 'none';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      tableContainer.style.display = 'block';
+
+      tbody.innerHTML = companies.map(c => {
+        const websiteLink = c.website 
+          ? `<a href="${escapeHtml(c.website)}" target="_blank" rel="noopener noreferrer" style="font-weight: 500;">${escapeHtml(c.website)}</a>` 
+          : '<span class="form-hint">N/A</span>';
+        
+        return `
+          <tr id="company-row-${c.id}">
+            <td><strong>#${c.id}</strong></td>
+            <td><strong style="color: var(--text-dark);">${escapeHtml(c.company_name)}</strong></td>
+            <td>${escapeHtml(c.location || 'N/A')}</td>
+            <td>${websiteLink}</td>
+            <td style="max-width: 280px; font-size: 0.86rem; color: var(--text-body);">${escapeHtml(c.description || 'No description.')}</td>
+            <td>
+              <div class="table-actions">
+                <button class="btn btn-sm btn-outline-primary table-action-btn" onclick="openEditCompanyModal(${c.id})">Edit</button>
+                <button class="btn btn-sm btn-danger table-action-btn" onclick="openDeleteCompanyModal(${c.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function setupCompanySearch() {
+      const searchInput = document.getElementById('company-search');
+      if (!searchInput) return;
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+          renderCompanies(allCompanies);
+          return;
+        }
+
+        const filtered = allCompanies.filter(c => {
+          const name = (c.company_name || '').toLowerCase();
+          const loc = (c.location || '').toLowerCase();
+          const desc = (c.description || '').toLowerCase();
+          return name.includes(query) || loc.includes(query) || desc.includes(query);
+        });
+
+        renderCompanies(filtered);
+      });
+    }
+
+    // Modal Operations
+    function openAddCompanyModal() {
+      clearAlert('company-modal-alert');
+      document.getElementById('company-modal-title').textContent = 'Add Recruiting Company';
+      document.getElementById('modal-company-id').value = '';
+      document.getElementById('company-name-input').value = '';
+      document.getElementById('company-location-input').value = '';
+      document.getElementById('company-website-input').value = '';
+      document.getElementById('company-desc-input').value = '';
+      document.getElementById('company-modal').classList.add('open');
+    }
+
+    function openEditCompanyModal(companyId) {
+      clearAlert('company-modal-alert');
+      const company = allCompanies.find(c => String(c.id) === String(companyId));
+      if (!company) return;
+
+      document.getElementById('company-modal-title').textContent = 'Edit Recruiting Company';
+      document.getElementById('modal-company-id').value = company.id;
+      document.getElementById('company-name-input').value = company.company_name || '';
+      document.getElementById('company-location-input').value = company.location || '';
+      document.getElementById('company-website-input').value = company.website || '';
+      document.getElementById('company-desc-input').value = company.description || '';
+      document.getElementById('company-modal').classList.add('open');
+    }
+
+    function closeCompanyModal() {
+      document.getElementById('company-modal').classList.remove('open');
+    }
+
+    document.getElementById('company-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('company-modal-alert');
+
+      const id = document.getElementById('modal-company-id').value;
+      const company_name = document.getElementById('company-name-input').value.trim();
+      const location = document.getElementById('company-location-input').value.trim();
+      const website = document.getElementById('company-website-input').value.trim();
+      const description = document.getElementById('company-desc-input').value.trim();
+
+      if (!company_name) {
+        showAlert('company-modal-alert', 'Company name is required.', 'danger');
+        return;
+      }
+      if (!location) {
+        showAlert('company-modal-alert', 'Company location is required.', 'danger');
+        return;
+      }
+
+      const payload = { company_name, location, website, description };
+      const saveBtn = document.getElementById('save-company-btn');
+
+      try {
+        setLoading(saveBtn, true, 'Save Company', 'Saving...');
+        let response;
+        if (id) {
+          response = await window.api.adminAPI.updateCompany(id, payload);
+        } else {
+          response = await window.api.adminAPI.createCompany(payload);
+        }
+        setLoading(saveBtn, false, 'Save Company');
+
+        if (response.success) {
+          closeCompanyModal();
+          showAlert('alert-container', id ? 'Company updated successfully!' : 'Company created successfully!', 'success');
+          await fetchCompanies();
+        } else {
+          showAlert('company-modal-alert', response.message || 'Operation failed.', 'danger');
+        }
+      } catch (err) {
+        setLoading(saveBtn, false, 'Save Company');
+        showAlert('company-modal-alert', err.message || 'Failed to save company.', 'danger');
+      }
+    });
+
+    function openDeleteCompanyModal(companyId) {
+      clearAlert('delete-company-alert');
+      const company = allCompanies.find(c => String(c.id) === String(companyId));
+      if (!company) return;
+
+      companyToDeleteId = companyId;
+      document.getElementById('delete-company-name').textContent = company.company_name;
+      document.getElementById('delete-company-modal').classList.add('open');
+    }
+
+    function closeDeleteCompanyModal() {
+      companyToDeleteId = null;
+      document.getElementById('delete-company-modal').classList.remove('open');
+    }
+
+    async function executeDeleteCompany() {
+      if (!companyToDeleteId) return;
+      clearAlert('delete-company-alert');
+      const deleteBtn = document.getElementById('confirm-delete-company-btn');
+
+      try {
+        setLoading(deleteBtn, true, 'Delete Company', 'Deleting...');
+        const response = await window.api.adminAPI.deleteCompany(companyToDeleteId);
+        setLoading(deleteBtn, false, 'Delete Company');
+
+        if (response.success) {
+          closeDeleteCompanyModal();
+          showAlert('alert-container', 'Company deleted successfully.', 'success');
+          await fetchCompanies();
+        } else {
+          showAlert('delete-company-alert', response.message || 'Failed to delete company.', 'danger');
+        }
+      } catch (err) {
+        setLoading(deleteBtn, false, 'Delete Company');
+        showAlert('delete-company-alert', err.message || 'Error deleting company.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Directory | Admin Portal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="admin-dashboard.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>Placement Admin Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="admin-dashboard.html" class="nav-link ">Dashboard</a></li>
+        <li><a href="admin-companies.html" class="nav-link ">Companies</a></li>
+        <li><a href="admin-jobs.html" class="nav-link ">Jobs</a></li>
+        <li><a href="admin-students.html" class="nav-link active">Students</a></li>
+        <li><a href="admin-applications.html" class="nav-link ">Applications</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="admin-name-badge">Administrator</span>
+          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Header Row -->
+      <div class="page-header-row">
+        <div>
+          <h2>Student Candidate Directory</h2>
+          <p class="form-hint">Browse registered student candidate profiles, academic records, verified skills, and applications</p>
+        </div>
+      </div>
+
+      <!-- Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Search & Filters Bar -->
+      <div class="filter-bar">
+        <form id="student-filter-form" class="filter-grid" onsubmit="handleApplyFilters(event)">
+          <div>
+            <label for="filter-search" class="form-label" style="font-size: 0.8rem;">Search</label>
+            <input type="text" id="filter-search" class="form-control" placeholder="Name, Roll ID, Email...">
+          </div>
+
+          <div>
+            <label for="filter-branch" class="form-label" style="font-size: 0.8rem;">Branch</label>
+            <select id="filter-branch" class="form-select">
+              <option value="">All Branches</option>
+              <option value="CSBS">CSBS</option>
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="ME">ME</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filter-year" class="form-label" style="font-size: 0.8rem;">Graduation Year</label>
+            <input type="number" id="filter-year" class="form-control" placeholder="e.g. 2025" min="2000" max="2035">
+          </div>
+
+          <div>
+            <label for="filter-min-cgpa" class="form-label" style="font-size: 0.8rem;">Min CGPA</label>
+            <input type="number" id="filter-min-cgpa" class="form-control" placeholder="e.g. 7.50" min="0" max="10" step="0.01">
+          </div>
+
+          <div>
+            <label for="filter-max-backlogs" class="form-label" style="font-size: 0.8rem;">Max Backlogs</label>
+            <input type="number" id="filter-max-backlogs" class="form-control" placeholder="e.g. 0" min="0">
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;">Filter</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="resetFilters()">Reset</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Students Table Card -->
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div id="students-loading" class="loading-container" style="padding: 3rem;">
+            <div class="loading-spinner-large"></div>
+            <p>Loading candidate directory...</p>
+          </div>
+
+          <div id="students-empty" class="empty-state" style="display: none; border: none;">
+            <div class="empty-state-icon">🎓</div>
+            <h3>No Students Found</h3>
+            <p>No student candidates matched the current search and filter criteria.</p>
+          </div>
+
+          <div id="students-table-container" class="table-responsive" style="display: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Roll ID</th>
+                  <th>Student Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Branch</th>
+                  <th>CGPA</th>
+                  <th>Backlogs</th>
+                  <th>Year</th>
+                  <th style="width: 150px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Student Full Profile Modal -->
+  <div class="modal-backdrop" id="student-modal">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Student Profile Details</h3>
+        <button class="modal-close" onclick="closeStudentModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="student-modal-loading" class="loading-container" style="display: none;">
+          <div class="loading-spinner-large"></div>
+          <p>Loading student profile and application history...</p>
+        </div>
+
+        <div id="student-modal-content">
+          <!-- Academic Grid -->
+          <div class="profile-grid" style="margin-bottom: 1.25rem;">
+            <div class="profile-field">
+              <div class="profile-label">Full Name</div>
+              <div class="profile-value" id="smodal-name">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Roll Number</div>
+              <div class="profile-value" id="smodal-roll">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Email</div>
+              <div class="profile-value" id="smodal-email">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Phone</div>
+              <div class="profile-value" id="smodal-phone">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Branch</div>
+              <div class="profile-value" id="smodal-branch">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">CGPA</div>
+              <div class="profile-value" id="smodal-cgpa">--</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Active Backlogs</div>
+              <div class="profile-value" id="smodal-backlogs">0</div>
+            </div>
+            <div class="profile-field">
+              <div class="profile-label">Graduation Year</div>
+              <div class="profile-value" id="smodal-year">--</div>
+            </div>
+          </div>
+
+          <!-- Skills Section -->
+          <div style="margin-bottom: 1.5rem;">
+            <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Technical Skills</h4>
+            <div id="smodal-skills" class="skills-container"></div>
+            <div id="smodal-skills-none" class="form-hint" style="display: none;">No skills tagged yet.</div>
+          </div>
+
+          <!-- Applications History Section -->
+          <div>
+            <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Campus Job Applications</h4>
+            <div id="smodal-apps-container" class="table-responsive">
+              <table class="data-table" style="font-size: 0.85rem;">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Job Title</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="smodal-apps-tbody"></tbody>
+              </table>
+            </div>
+            <div id="smodal-apps-none" class="form-hint" style="display: none;">Candidate has not applied to any drives yet.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeStudentModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Student Confirmation Modal -->
+  <div class="modal-backdrop" id="delete-student-modal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Student Deletion</h3>
+        <button class="modal-close" onclick="closeDeleteStudentModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="delete-student-alert"></div>
+        <p>Are you sure you want to delete student <strong id="delete-student-name">this candidate</strong>?</p>
+        <p class="form-hint" style="color: var(--danger-text);">
+          Note: The backend protects candidates with application history from deletion.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeDeleteStudentModal()">Cancel</button>
+        <button type="button" id="confirm-delete-student-btn" class="btn btn-danger" onclick="executeDeleteStudent()">
+          Delete Student
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Training & Placement Cell.</p>
+      <ul class="footer-links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="javascript:void(0)" onclick="handleAdminLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    requireAdminAuth('admin-login.html');
+
+    let currentStudents = [];
+    let studentToDeleteUserId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchStudents();
+    });
+
+    async function fetchStudents(params = {}) {
+      const loadingEl = document.getElementById('students-loading');
+      const emptyEl = document.getElementById('students-empty');
+      const tableContainer = document.getElementById('students-table-container');
+
+      try {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableContainer.style.display = 'none';
+
+        const response = await window.api.adminAPI.getStudents(params);
+        loadingEl.style.display = 'none';
+
+        if (response.success && response.data && Array.isArray(response.data.students)) {
+          currentStudents = response.data.students;
+          renderStudents(currentStudents);
+        } else {
+          emptyEl.style.display = 'block';
+        }
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        showAlert('alert-container', 'Failed to load students: ' + err.message, 'danger');
+      }
+    }
+
+    function renderStudents(students) {
+      const emptyEl = document.getElementById('students-empty');
+      const tableContainer = document.getElementById('students-table-container');
+      const tbody = document.getElementById('students-tbody');
+
+      if (!students || students.length === 0) {
+        emptyEl.style.display = 'block';
+        tableContainer.style.display = 'none';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      tableContainer.style.display = 'block';
+
+      tbody.innerHTML = students.map(s => {
+        return `
+          <tr id="student-row-${s.user_id}">
+            <td><strong>${escapeHtml(s.student_id)}</strong></td>
+            <td><strong style="color: var(--text-dark);">${escapeHtml(s.name)}</strong></td>
+            <td>${escapeHtml(s.email)}</td>
+            <td>${escapeHtml(s.phone || 'N/A')}</td>
+            <td><span class="badge badge-primary">${escapeHtml(s.branch)}</span></td>
+            <td><strong>${parseFloat(s.cgpa).toFixed(2)}</strong></td>
+            <td>${s.backlogs}</td>
+            <td>${s.graduation_year}</td>
+            <td>
+              <div class="table-actions">
+                <button class="btn btn-sm btn-outline table-action-btn" onclick="openStudentModal(${s.user_id})">Profile</button>
+                <button class="btn btn-sm btn-danger table-action-btn" onclick="openDeleteStudentModal(${s.user_id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function handleApplyFilters(e) {
+      e.preventDefault();
+      const search = document.getElementById('filter-search').value.trim();
+      const branch = document.getElementById('filter-branch').value;
+      const graduation_year = document.getElementById('filter-year').value;
+      const min_cgpa = document.getElementById('filter-min-cgpa').value;
+      const max_backlogs = document.getElementById('filter-max-backlogs').value;
+
+      const params = {};
+      if (search) params.search = search;
+      if (branch) params.branch = branch;
+      if (graduation_year) params.graduation_year = graduation_year;
+      if (min_cgpa) params.min_cgpa = min_cgpa;
+      if (max_backlogs !== '') params.max_backlogs = max_backlogs;
+
+      fetchStudents(params);
+    }
+
+    function resetFilters() {
+      document.getElementById('student-filter-form').reset();
+      fetchStudents();
+    }
+
+    // Modal Operations: View Student Profile
+    async function openStudentModal(userId) {
+      const modal = document.getElementById('student-modal');
+      const loading = document.getElementById('student-modal-loading');
+      const content = document.getElementById('student-modal-content');
+
+      modal.classList.add('open');
+      loading.style.display = 'block';
+      content.style.display = 'none';
+
+      try {
+        const response = await window.api.adminAPI.getStudentById(userId);
+        loading.style.display = 'none';
+
+        if (response.success && response.data && response.data.student) {
+          content.style.display = 'block';
+          const s = response.data.student;
+          const skills = response.data.skills || [];
+          const apps = response.data.applications || [];
+
+          document.getElementById('smodal-name').textContent = s.name;
+          document.getElementById('smodal-roll').textContent = s.student_id;
+          document.getElementById('smodal-email').textContent = s.email;
+          document.getElementById('smodal-phone').textContent = s.phone;
+          document.getElementById('smodal-branch').textContent = s.branch;
+          document.getElementById('smodal-cgpa').textContent = parseFloat(s.cgpa).toFixed(2);
+          document.getElementById('smodal-backlogs').textContent = s.backlogs;
+          document.getElementById('smodal-year').textContent = s.graduation_year;
+
+          // Skills
+          const skillsContainer = document.getElementById('smodal-skills');
+          const skillsNone = document.getElementById('smodal-skills-none');
+          if (skills.length === 0) {
+            skillsContainer.style.display = 'none';
+            skillsNone.style.display = 'block';
+          } else {
+            skillsNone.style.display = 'none';
+            skillsContainer.style.display = 'flex';
+            skillsContainer.innerHTML = skills.map(sk => `
+              <span class="skill-chip"><span>${escapeHtml(sk.skill_name)}</span></span>
+            `).join('');
+          }
+
+          // Applications
+          const appsContainer = document.getElementById('smodal-apps-container');
+          const appsNone = document.getElementById('smodal-apps-none');
+          const appsTbody = document.getElementById('smodal-apps-tbody');
+          if (apps.length === 0) {
+            appsContainer.style.display = 'none';
+            appsNone.style.display = 'block';
+          } else {
+            appsNone.style.display = 'none';
+            appsContainer.style.display = 'block';
+            appsTbody.innerHTML = apps.map(a => {
+              const statusClass = 'status-' + (a.status || 'applied').toLowerCase();
+              return `
+                <tr>
+                  <td>${escapeHtml(a.company_name)}</td>
+                  <td>${escapeHtml(a.job_title)}</td>
+                  <td>${formatDate(a.application_date)}</td>
+                  <td><span class="status-badge ${statusClass}">${escapeHtml(a.status)}</span></td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        loading.style.display = 'none';
+        alert('Failed to retrieve student profile: ' + err.message);
+        closeStudentModal();
+      }
+    }
+
+    function closeStudentModal() {
+      document.getElementById('student-modal').classList.remove('open');
+    }
+
+    function openDeleteStudentModal(userId) {
+      clearAlert('delete-student-alert');
+      const student = currentStudents.find(s => String(s.user_id) === String(userId));
+      if (!student) return;
+
+      studentToDeleteUserId = userId;
+      document.getElementById('delete-student-name').textContent = student.name + ' (' + student.student_id + ')';
+      document.getElementById('delete-student-modal').classList.add('open');
+    }
+
+    function closeDeleteStudentModal() {
+      studentToDeleteUserId = null;
+      document.getElementById('delete-student-modal').classList.remove('open');
+    }
+
+    async function executeDeleteStudent() {
+      if (!studentToDeleteUserId) return;
+      clearAlert('delete-student-alert');
+      const deleteBtn = document.getElementById('confirm-delete-student-btn');
+
+      try {
+        setLoading(deleteBtn, true, 'Delete Student', 'Deleting...');
+        const response = await window.api.adminAPI.deleteStudent(studentToDeleteUserId);
+        setLoading(deleteBtn, false, 'Delete Student');
+
+        if (response.success) {
+          closeDeleteStudentModal();
+          showAlert('alert-container', 'Student candidate deleted successfully.', 'success');
+          await fetchStudents();
+        } else {
+          showAlert('delete-student-alert', response.message || 'Failed to delete student.', 'danger');
+        }
+      } catch (err) {
+        setLoading(deleteBtn, false, 'Delete Student');
+        // Backend protection message display: "Student cannot be deleted because application history exists."
+        showAlert('delete-student-alert', err.message || 'Error deleting student.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

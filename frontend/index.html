@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Placement Management System | Campus Placement Portal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand">
+        <span class="nav-brand-icon">CP</span>
+        <span>College Placement System</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="pages/student-login.html" class="nav-link">Jobs</a></li>
+        <li><a href="pages/student-login.html" class="nav-link">Student Login</a></li>
+        <li><a href="pages/student-register.html" class="btn btn-sm btn-primary">Register Now</a></li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero-tag">🎯 Campus Recruitment Portal — Season 2026</span>
+      <h1 class="hero-title">Empowering Students to Connect with Top Recruiters</h1>
+      <p class="hero-subtitle">
+        A centralized campus recruitment platform offering automated eligibility verification,
+        verified hiring drives, skill portfolios, and real-time application tracking.
+      </p>
+      <div class="hero-actions">
+        <a href="pages/student-register.html" class="btn btn-primary btn-lg">Student Registration</a>
+        <a href="pages/student-login.html" class="btn btn-outline btn-lg">Student Login</a>
+        <a href="pages/student-dashboard.html" class="btn btn-secondary btn-lg">View Campus Drives</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Placement Highlights / Stats -->
+  <section class="highlights-section">
+    <div class="container">
+      <div class="highlights-grid">
+        <div>
+          <div class="highlight-number">100+</div>
+          <div class="highlight-label">Recruiting Companies</div>
+        </div>
+        <div>
+          <div class="highlight-number">500+</div>
+          <div class="highlight-label">Students Placed</div>
+        </div>
+        <div>
+          <div class="highlight-number">₹ 18 LPA</div>
+          <div class="highlight-label">Highest Package</div>
+        </div>
+        <div>
+          <div class="highlight-number">100%</div>
+          <div class="highlight-label">Transparent Eligibility</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Placement Workflow Section -->
+  <section class="workflow-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>How Campus Recruitment Works</h2>
+        <p>A simple, structured 4-step roadmap from student registration to your dream job offer.</p>
+      </div>
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="workflow-step">Step 01</div>
+          <h3 class="workflow-title">Create Profile</h3>
+          <p class="workflow-desc">Register with verified academic data: CGPA, branch, graduation batch, and backlog status.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-step">Step 02</div>
+          <h3 class="workflow-title">Build Skills</h3>
+          <p class="workflow-desc">Add technical skills like Python, Java, SQL, and DSA to match recruiter requirements.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-step">Step 03</div>
+          <h3 class="workflow-title">Instant Eligibility</h3>
+          <p class="workflow-desc">One-click automated backend verification checks CGPA cutoffs, backlogs, and branch eligibility.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-step">Step 04</div>
+          <h3 class="workflow-title">Live Tracking</h3>
+          <p class="workflow-desc">Submit your applications with one click and track status from Applied to Shortlisted and Selected.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Key Features Section -->
+  <main class="main-content">
+    <section class="container features-section">
+      <div class="section-header">
+        <h2>Why Choose Our Placement Portal?</h2>
+        <p>Engineered to streamline campus drives for students, recruiters, and placement officers alike.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Automated Eligibility</h3>
+          <p>Instant criteria verification checking CGPA cutoffs, department eligibility, and active backlogs with zero manual friction.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🏢</div>
+          <h3>Top Recruiting Companies</h3>
+          <p>Access active drives from leading global technology companies, product firms, and core engineering enterprises.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💼</div>
+          <h3>Curated Job Listings</h3>
+          <p>Detailed job descriptions, remuneration packages, job locations, and application deadlines presented in a clean layout.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Real-Time Tracking</h3>
+          <p>Monitor your application lifecycle from initial registration to shortlisting, interviews, and final job offer selection.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. All rights reserved.</p>
+      <ul class="footer-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="pages/student-login.html">Student Login</a></li>
+        <li><a href="pages/student-register.html">Register</a></li>
+        <li><a href="pages/admin-login.html">Admin Portal</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

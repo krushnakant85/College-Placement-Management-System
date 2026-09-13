@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal Login | College Placement Management System</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>College Placement System</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="student-login.html" class="nav-link">Student Portal</a></li>
+        <li><a href="admin-login.html" class="nav-link active">Admin Login</a></li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Login Container -->
+  <main class="main-content">
+    <div class="container auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <span class="badge badge-admin" style="margin-bottom: 0.75rem; display: inline-block;">Placement Office Access</span>
+          <h2>Admin Portal Login</h2>
+          <p>Sign in to manage partner companies, job openings, student candidates, and recruitment drives</p>
+        </div>
+
+        <!-- Dynamic Feedback Alert Container -->
+        <div id="alert-container"></div>
+
+        <!-- Admin Login Form -->
+        <form id="admin-login-form" novalidate>
+          <div class="form-group">
+            <label for="admin-email" class="form-label">Administrator Email <span class="required">*</span></label>
+            <input 
+              type="email" 
+              id="admin-email" 
+              name="email" 
+              class="form-control" 
+              placeholder="e.g. admin.placement@college.edu" 
+              required 
+              autofocus
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="admin-password" class="form-label">Password <span class="required">*</span></label>
+            <input 
+              type="password" 
+              id="admin-password" 
+              name="password" 
+              class="form-control" 
+              placeholder="Enter administrator password" 
+              required
+            >
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" id="admin-login-btn" class="btn btn-primary btn-block btn-lg">
+              Login to Admin Portal
+            </button>
+          </div>
+        </form>
+
+        <div class="auth-footer">
+          Looking for Student Portal? <a href="student-login.html">Student Login</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Placement Office & Corporate Relations.</p>
+      <ul class="footer-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="student-login.html">Student Portal</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    // Redirect if already authenticated as administrator
+    requireAdminGuest('admin-dashboard.html');
+
+    const form = document.getElementById('admin-login-form');
+    const loginBtn = document.getElementById('admin-login-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('alert-container');
+
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+
+      if (!email) {
+        showAlert('alert-container', 'Please enter your administrator email address.', 'danger');
+        return;
+      }
+
+      if (!password) {
+        showAlert('alert-container', 'Please enter your administrator password.', 'danger');
+        return;
+      }
+
+      try {
+        setLoading(loginBtn, true, 'Login to Admin Portal', 'Authenticating...');
+
+        const response = await window.api.adminAPI.login({ email, password });
+
+        setLoading(loginBtn, false, 'Login to Admin Portal');
+
+        if (response.success && response.data && response.data.admin) {
+          setAdminSession(response.data.admin);
+          showAlert('alert-container', 'Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'admin-dashboard.html';
+          }, 350);
+        } else {
+          showAlert('alert-container', response.message || 'Invalid administrator credentials.', 'danger');
+        }
+      } catch (error) {
+        setLoading(loginBtn, false, 'Login to Admin Portal');
+        showAlert(
+          'alert-container',
+          error.message || 'Authentication failed. Please verify credentials.',
+          'danger'
+        );
+      }
+    });
+  </script>
+</body>
+</html>

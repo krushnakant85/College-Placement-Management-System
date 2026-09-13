@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Portal | College Placement Management System</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <span class="nav-brand-icon">CP</span>
+        <span>College Placement Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="javascript:void(0)" onclick="switchTab('overview')" class="nav-link active" id="nav-overview">Portal</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="student-name-badge">Student</span>
+          <button onclick="handleLogout()" class="btn btn-sm btn-outline-primary">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Dynamic Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Portal Navigation Tabs -->
+      <nav class="portal-tabs-nav" aria-label="Student Portal Sections">
+        <button class="portal-tab-btn active" id="tab-btn-overview" onclick="switchTab('overview')">
+          📊 Overview
+        </button>
+        <button class="portal-tab-btn" id="tab-btn-profile" onclick="switchTab('profile')">
+          👤 My Profile
+        </button>
+        <button class="portal-tab-btn" id="tab-btn-skills" onclick="switchTab('skills')">
+          💡 Technical Skills
+        </button>
+        <button class="portal-tab-btn" id="tab-btn-jobs" onclick="switchTab('jobs')">
+          💼 Available Jobs
+        </button>
+        <button class="portal-tab-btn" id="tab-btn-applications" onclick="switchTab('applications')">
+          📝 My Applications <span id="app-count-badge" class="badge badge-primary" style="margin-left: 4px; display: none;">0</span>
+        </button>
+      </nav>
+
+      <!-- ================================================================== -->
+      <!-- TAB 1: OVERVIEW -->
+      <!-- ================================================================== -->
+      <div class="portal-tab-panel active" id="panel-overview">
+        <section class="welcome-banner" id="welcome-banner">
+          <div>
+            <h2 id="welcome-student-name">Welcome back, Student!</h2>
+            <p>Access campus recruitment drives, verify job eligibility, and track your application status.</p>
+          </div>
+          <div class="welcome-meta">
+            <div class="welcome-chip" id="chip-roll">Roll: Loading...</div>
+            <div class="welcome-chip" id="chip-branch">Branch: Loading...</div>
+            <div class="welcome-chip" id="chip-batch">Batch: Loading...</div>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🎓</div>
+            <div>
+              <div class="stat-value" id="stat-cgpa">--</div>
+              <div class="stat-label">Current CGPA</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div>
+              <div class="stat-value" id="stat-branch">--</div>
+              <div class="stat-label">Academic Department</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div>
+              <div class="stat-value" id="stat-backlogs">0</div>
+              <div class="stat-label">Active Backlogs</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div>
+              <div class="stat-value" id="stat-year">--</div>
+              <div class="stat-label">Graduation Year</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="margin-top: 2rem;">
+          <h3 style="margin-bottom: 1.25rem;">Quick Portal Navigation</h3>
+          <div class="features-grid">
+            <div class="feature-card" style="cursor: pointer;" onclick="switchTab('jobs')">
+              <div class="feature-icon">💼</div>
+              <h3>Explore Campus Jobs</h3>
+              <p>Browse active drives from top recruiting companies, check eligibility, and submit applications.</p>
+              <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">View Openings &rarr;</span>
+            </div>
+            <div class="feature-card" style="cursor: pointer;" onclick="switchTab('skills')">
+              <div class="feature-icon">💡</div>
+              <h3>Manage Your Skills</h3>
+              <p>Add your technical skills such as Python, Java, SQL, and DSA to fulfill employer requirements.</p>
+              <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">Update Skills &rarr;</span>
+            </div>
+            <div class="feature-card" style="cursor: pointer;" onclick="switchTab('applications')">
+              <div class="feature-icon">📝</div>
+              <h3>Track Applications</h3>
+              <p>Review real-time status of submitted applications from Applied to Interview and Selection.</p>
+              <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">View Status &rarr;</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- TAB 2: MY PROFILE -->
+      <!-- ================================================================== -->
+      <div class="portal-tab-panel" id="panel-profile">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Academic & Personal Profile</h3>
+              <p class="form-hint" style="margin-bottom: 0;">Verified candidate details registered with the Placement Cell</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openEditProfileModal()">
+              ✏️ Edit Profile
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="profile-grid">
+              <div class="profile-field">
+                <div class="profile-label">Full Name</div>
+                <div class="profile-value" id="prof-name">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Email Address</div>
+                <div class="profile-value" id="prof-email">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Phone Number</div>
+                <div class="profile-value" id="prof-phone">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Student Roll ID</div>
+                <div class="profile-value" id="prof-roll">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Academic Department</div>
+                <div class="profile-value" id="prof-branch">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Current CGPA</div>
+                <div class="profile-value" id="prof-cgpa">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Graduation Year</div>
+                <div class="profile-value" id="prof-year">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Active Backlogs</div>
+                <div class="profile-value" id="prof-backlogs">Loading...</div>
+              </div>
+              <div class="profile-field">
+                <div class="profile-label">Account Created</div>
+                <div class="profile-value" id="prof-created">Loading...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- TAB 3: MY SKILLS -->
+      <!-- ================================================================== -->
+      <div class="portal-tab-panel" id="panel-skills">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Technical Skills Portfolio</h3>
+              <p class="form-hint" style="margin-bottom: 0;">Highlight your technical competencies to match recruiter eligibility criteria</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="skills-alert-container"></div>
+            <h4 style="margin-bottom: 0.75rem; font-size: 1.05rem;">Current Skills</h4>
+            <div id="skills-loading" class="loading-container" style="padding: 1.5rem 0;">
+              <div class="loading-spinner-large" style="width: 28px; height: 28px;"></div>
+              <p>Loading technical skills...</p>
+            </div>
+            <div id="skills-list" class="skills-container" style="display: none;"></div>
+            <div id="skills-empty" class="empty-state" style="display: none; padding: 2rem 1rem; margin-bottom: 1.5rem;">
+              <div class="empty-state-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">💡</div>
+              <h4>No Technical Skills Added Yet</h4>
+              <p>Add technical skills from the list below so hiring companies can verify your qualification.</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 1.75rem 0;">
+            <h4 style="margin-bottom: 0.75rem; font-size: 1.05rem;">Add a Skill</h4>
+            <form id="add-skill-form" onsubmit="handleAddSkill(event)" class="add-skill-bar">
+              <select id="skill-select" class="form-select" required>
+                <option value="">-- Choose Skill to Add --</option>
+                <option value="1">Java</option>
+                <option value="2">Python</option>
+                <option value="3">SQL</option>
+                <option value="4">C++</option>
+                <option value="5">JavaScript</option>
+                <option value="6">Node.js</option>
+                <option value="7">React</option>
+                <option value="8">Data Structures &amp; Algorithms</option>
+                <option value="9">Machine Learning</option>
+              </select>
+              <button type="submit" id="add-skill-btn" class="btn btn-primary" style="white-space: nowrap;">
+                + Add Skill
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- TAB 4: AVAILABLE JOBS -->
+      <!-- ================================================================== -->
+      <div class="portal-tab-panel" id="panel-jobs">
+        <div class="dashboard-controls">
+          <div>
+            <h2>Campus Placement Drives</h2>
+            <p class="form-hint" style="font-size: 0.95rem; margin-top: 0.25rem;">
+              Explore recruiting companies, evaluate your eligibility, and submit applications
+            </p>
+          </div>
+          <div>
+            <input
+              type="text"
+              id="job-search"
+              class="form-control search-input"
+              placeholder="Search by company, role, or branch..."
+            >
+          </div>
+        </div>
+        <div id="jobs-loading" class="loading-container">
+          <div class="loading-spinner-large"></div>
+          <p>Fetching active campus placement drives...</p>
+        </div>
+        <div id="jobs-container" class="jobs-grid" style="display: none;"></div>
+        <div id="jobs-empty" class="empty-state" style="display: none;">
+          <div class="empty-state-icon">💼</div>
+          <h3>No Job Postings Found</h3>
+          <p>There are currently no placement drives matching your criteria. Please check back later.</p>
+        </div>
+      </div>
+
+      <!-- ================================================================== -->
+      <!-- TAB 5: MY APPLICATIONS -->
+      <!-- ================================================================== -->
+      <div class="portal-tab-panel" id="panel-applications">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">My Application Pipeline</h3>
+              <p class="form-hint" style="margin-bottom: 0;">Real-time status tracking for positions you have applied to</p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="fetchStudentApplications(true)">
+              🔄 Refresh
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="applications-loading" class="loading-container" style="padding: 2rem 0;">
+              <div class="loading-spinner-large" style="width: 28px; height: 28px;"></div>
+              <p>Loading your applications...</p>
+            </div>
+            <div id="applications-table-wrapper" class="table-responsive" style="display: none;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Company</th>
+                    <th>Job Title</th>
+                    <th>Application Date</th>
+                    <th>Current Status</th>
+                  </tr>
+                </thead>
+                <tbody id="applications-table-body"></tbody>
+              </table>
+            </div>
+            <div id="applications-empty" class="empty-state" style="display: none;">
+              <div class="empty-state-icon">📝</div>
+              <h3>No Applications Submitted Yet</h3>
+              <p>You haven't applied to any campus drives yet. Check Available Jobs and verify your eligibility to apply!</p>
+              <button class="btn btn-primary btn-sm" style="margin-top: 1rem;" onclick="switchTab('jobs')">
+                Browse Campus Jobs
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================================================================== -->
+  <!-- MODAL 1: EDIT PROFILE -->
+  <!-- ==================================================================== -->
+  <div class="modal-backdrop" id="edit-profile-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Candidate Profile</h3>
+        <button class="modal-close" onclick="closeEditProfileModal()" aria-label="Close">&times;</button>
+      </div>
+      <form id="edit-profile-form" onsubmit="handleSaveProfile(event)">
+        <div class="modal-body">
+          <div id="edit-profile-alert"></div>
+          <div class="form-group">
+            <label for="edit-name" class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" id="edit-name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-phone" class="form-label">Phone Number <span class="required">*</span></label>
+            <input type="tel" id="edit-phone" class="form-control" required>
+            <div class="form-hint">At least 10 digits</div>
+          </div>
+          <div class="form-group">
+            <label for="edit-branch" class="form-label">Branch / Department <span class="required">*</span></label>
+            <select id="edit-branch" class="form-select" required>
+              <option value="CSBS">Computer Science &amp; Business Systems (CSBS)</option>
+              <option value="CSE">Computer Science &amp; Engineering (CSE)</option>
+              <option value="IT">Information Technology (IT)</option>
+              <option value="ECE">Electronics &amp; Communication (ECE)</option>
+              <option value="EEE">Electrical &amp; Electronics (EEE)</option>
+              <option value="MECH">Mechanical Engineering (MECH)</option>
+              <option value="CIVIL">Civil Engineering (CIVIL)</option>
+            </select>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="edit-cgpa" class="form-label">CGPA <span class="required">*</span></label>
+              <input type="number" id="edit-cgpa" class="form-control" step="0.01" min="0" max="10" required>
+              <div class="form-hint">0.00 - 10.00</div>
+            </div>
+            <div class="form-group">
+              <label for="edit-year" class="form-label">Graduation Year <span class="required">*</span></label>
+              <input type="number" id="edit-year" class="form-control" min="2000" max="2035" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-backlogs" class="form-label">Backlogs <span class="required">*</span></label>
+              <input type="number" id="edit-backlogs" class="form-control" min="0" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeEditProfileModal()">Cancel</button>
+          <button type="submit" id="save-profile-btn" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- MODAL 2: JOB DETAILS & ELIGIBILITY -->
+  <!-- ==================================================================== -->
+  <div class="modal-backdrop" id="job-details-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="job-modal-title">Job Details</h3>
+        <button class="modal-close" onclick="closeJobDetailsModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <span class="job-company" id="job-modal-company" style="font-size: 0.95rem;"></span>
+          <h2 id="job-modal-heading" style="font-size: 1.5rem; margin-top: 0.25rem;"></h2>
+          <div id="job-modal-package" class="job-package-tag" style="margin-top: 0.5rem;"></div>
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 1rem; margin-bottom: 0.4rem;">Job Description</h4>
+          <p id="job-modal-desc" style="color: var(--text-body); font-size: 0.95rem; white-space: pre-line;"></p>
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Eligibility Criteria</h4>
+          <ul class="job-details-list">
+            <li class="job-details-item">
+              <span class="job-details-label">Job Location:</span>
+              <span class="job-details-val" id="job-modal-loc"></span>
+            </li>
+            <li class="job-details-item">
+              <span class="job-details-label">Eligible Branch:</span>
+              <span class="job-details-val" id="job-modal-branch"></span>
+            </li>
+            <li class="job-details-item">
+              <span class="job-details-label">Minimum CGPA:</span>
+              <span class="job-details-val" id="job-modal-cgpa"></span>
+            </li>
+            <li class="job-details-item">
+              <span class="job-details-label">Maximum Backlogs Allowed:</span>
+              <span class="job-details-val" id="job-modal-backlogs"></span>
+            </li>
+            <li class="job-details-item">
+              <span class="job-details-label">Application Deadline:</span>
+              <span class="job-details-val" id="job-modal-deadline"></span>
+            </li>
+          </ul>
+        </div>
+        <div id="job-modal-eligibility-area"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeJobDetailsModal()">Close</button>
+        <button type="button" id="modal-check-eligibility-btn" class="btn btn-secondary">
+          🔍 Check Eligibility
+        </button>
+        <button type="button" id="modal-apply-btn" class="btn btn-primary" style="display: none;">
+          ⚡ Apply Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. All rights reserved.</p>
+      <ul class="footer-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="javascript:void(0)" onclick="handleLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    // Enforce authentication
+    requireAuth("student-login.html");
+
+    let currentUser = null;
+    let currentStudent = null;
+    let allJobs = [];
+    let myApplications = [];
+    let mySkills = [];
+    let selectedJobForModal = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      currentUser = getStoredUser();
+      if (!currentUser || !currentUser.id) {
+        handleLogout();
+        return;
+      }
+
+      const hash = window.location.hash.replace("#", "");
+      if (["overview", "profile", "skills", "jobs", "applications"].includes(hash)) {
+        switchTab(hash);
+      }
+
+      await fetchLiveProfile();
+      await fetchStudentSkills();
+      await fetchStudentApplications();
+      await fetchCampusJobs();
+      setupSearch();
+    });
+
+    function switchTab(tabId) {
+      const tabs = ["overview", "profile", "skills", "jobs", "applications"];
+      if (!tabs.includes(tabId)) tabId = "overview";
+      tabs.forEach((t) => {
+        const btn = document.getElementById("tab-btn-" + t);
+        const panel = document.getElementById("panel-" + t);
+        if (btn) btn.classList.toggle("active", t === tabId);
+        if (panel) panel.classList.toggle("active", t === tabId);
+      });
+      history.replaceState(null, "", "#" + tabId);
+    }
+
+    async function fetchLiveProfile() {
+      try {
+        const response = await window.api.studentAPI.getProfile(currentUser.id);
+        if (response.success && response.data && response.data.student) {
+          currentStudent = response.data.student;
+          setSession(currentUser, currentStudent);
+          renderProfileUI();
+        }
+      } catch (err) {
+        showAlert("alert-container", "Failed to retrieve profile: " + err.message, "danger");
+      }
+    }
+
+    function renderProfileUI() {
+      if (!currentStudent) return;
+      const name = currentStudent.name || "Student";
+      document.getElementById("welcome-student-name").textContent = "Welcome back, " + name + "!";
+      document.getElementById("student-name-badge").textContent = name;
+      document.getElementById("chip-roll").textContent = "Roll: " + (currentStudent.student_id || "N/A");
+      document.getElementById("chip-branch").textContent = "Branch: " + (currentStudent.branch || "N/A");
+      document.getElementById("chip-batch").textContent = "Batch: " + (currentStudent.graduation_year || "N/A");
+
+      document.getElementById("stat-cgpa").textContent = currentStudent.cgpa !== undefined ? parseFloat(currentStudent.cgpa).toFixed(2) : "--";
+      document.getElementById("stat-branch").textContent = currentStudent.branch || "--";
+      document.getElementById("stat-backlogs").textContent = currentStudent.backlogs !== undefined ? currentStudent.backlogs : "0";
+      document.getElementById("stat-year").textContent = currentStudent.graduation_year || "--";
+
+      document.getElementById("prof-name").textContent = currentStudent.name || "--";
+      document.getElementById("prof-email").textContent = currentStudent.email || "--";
+      document.getElementById("prof-phone").textContent = currentStudent.phone || "--";
+      document.getElementById("prof-roll").textContent = currentStudent.student_id || "--";
+      document.getElementById("prof-branch").textContent = currentStudent.branch || "--";
+      document.getElementById("prof-cgpa").textContent = currentStudent.cgpa !== undefined ? parseFloat(currentStudent.cgpa).toFixed(2) : "--";
+      document.getElementById("prof-year").textContent = currentStudent.graduation_year || "--";
+      document.getElementById("prof-backlogs").textContent = currentStudent.backlogs !== undefined ? currentStudent.backlogs : "0";
+      document.getElementById("prof-created").textContent = formatDate(currentStudent.created_at);
+    }
+
+    function openEditProfileModal() {
+      if (!currentStudent) return;
+      clearAlert("edit-profile-alert");
+      document.getElementById("edit-name").value = currentStudent.name || "";
+      document.getElementById("edit-phone").value = currentStudent.phone || "";
+      document.getElementById("edit-branch").value = currentStudent.branch || "CSBS";
+      document.getElementById("edit-cgpa").value = currentStudent.cgpa !== undefined ? currentStudent.cgpa : "";
+      document.getElementById("edit-year").value = currentStudent.graduation_year || "";
+      document.getElementById("edit-backlogs").value = currentStudent.backlogs !== undefined ? currentStudent.backlogs : 0;
+      document.getElementById("edit-profile-modal").classList.add("open");
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById("edit-profile-modal").classList.remove("open");
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      clearAlert("edit-profile-alert");
+      const name = document.getElementById("edit-name").value.trim();
+      const phone = document.getElementById("edit-phone").value.trim();
+      const branch = document.getElementById("edit-branch").value.trim();
+      const cgpa = parseFloat(document.getElementById("edit-cgpa").value);
+      const graduation_year = parseInt(document.getElementById("edit-year").value, 10);
+      const backlogs = parseInt(document.getElementById("edit-backlogs").value, 10);
+
+      if (!name) { showAlert("edit-profile-alert", "Name is required.", "danger"); return; }
+      if (!phone || phone.length < 10) { showAlert("edit-profile-alert", "Phone number must have at least 10 digits.", "danger"); return; }
+      if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) { showAlert("edit-profile-alert", "CGPA must be a valid number between 0.00 and 10.00.", "danger"); return; }
+      if (isNaN(graduation_year) || graduation_year < 2000) { showAlert("edit-profile-alert", "Graduation year must be valid.", "danger"); return; }
+      if (isNaN(backlogs) || backlogs < 0) { showAlert("edit-profile-alert", "Backlogs must be a non-negative integer (0 or greater).", "danger"); return; }
+
+      const saveBtn = document.getElementById("save-profile-btn");
+      try {
+        setLoading(saveBtn, true, "Save Changes", "Saving...");
+        const updateData = { name, phone, branch, cgpa, graduation_year, backlogs };
+        const response = await window.api.studentAPI.updateProfile(currentUser.id, updateData);
+        setLoading(saveBtn, false, "Save Changes");
+        if (response.success) {
+          closeEditProfileModal();
+          showAlert("alert-container", "Profile updated successfully!", "success");
+          await fetchLiveProfile();
+        } else {
+          showAlert("edit-profile-alert", response.message || "Failed to update profile.", "danger");
+        }
+      } catch (err) {
+        setLoading(saveBtn, false, "Save Changes");
+        showAlert("edit-profile-alert", err.message || "Error updating profile.", "danger");
+      }
+    }
+
+    async function fetchStudentSkills() {
+      const loadingEl = document.getElementById("skills-loading");
+      const listEl = document.getElementById("skills-list");
+      const emptyEl = document.getElementById("skills-empty");
+      try {
+        loadingEl.style.display = "block";
+        listEl.style.display = "none";
+        emptyEl.style.display = "none";
+        const response = await window.api.studentAPI.getSkills(currentUser.id);
+        loadingEl.style.display = "none";
+        if (response.success && response.data && Array.isArray(response.data.skills)) {
+          mySkills = response.data.skills;
+          renderSkillsUI();
+        } else {
+          emptyEl.style.display = "block";
+        }
+      } catch (err) {
+        loadingEl.style.display = "none";
+        showAlert("skills-alert-container", "Failed to load skills: " + err.message, "danger");
+      }
+    }
+
+    function renderSkillsUI() {
+      const listEl = document.getElementById("skills-list");
+      const emptyEl = document.getElementById("skills-empty");
+      if (!mySkills || mySkills.length === 0) {
+        listEl.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      emptyEl.style.display = "none";
+      listEl.style.display = "flex";
+      listEl.innerHTML = mySkills.map((s) => {
+        return '<div class="skill-chip"><span>' + escapeHtml(s.skill_name) + '</span><button class="skill-delete-btn" onclick="handleDeleteSkill(' + s.id + ')" title="Remove skill">&times;</button></div>';
+      }).join("");
+    }
+
+    async function handleAddSkill(e) {
+      e.preventDefault();
+      clearAlert("skills-alert-container");
+      const selectEl = document.getElementById("skill-select");
+      const skillId = selectEl.value;
+      const addBtn = document.getElementById("add-skill-btn");
+      if (!skillId) {
+        showAlert("skills-alert-container", "Please choose a skill to add.", "warning");
+        return;
+      }
+      try {
+        setLoading(addBtn, true, "+ Add Skill", "Adding...");
+        const response = await window.api.studentAPI.addSkill(currentUser.id, skillId);
+        setLoading(addBtn, false, "+ Add Skill");
+        if (response.success) {
+          selectEl.value = "";
+          showAlert("skills-alert-container", "Skill added successfully!", "success");
+          await fetchStudentSkills();
+        } else {
+          showAlert("skills-alert-container", response.message || "Failed to add skill.", "danger");
+        }
+      } catch (err) {
+        setLoading(addBtn, false, "+ Add Skill");
+        showAlert("skills-alert-container", err.message || "Unable to add skill.", "danger");
+      }
+    }
+
+    async function handleDeleteSkill(skillId) {
+      clearAlert("skills-alert-container");
+      try {
+        const response = await window.api.studentAPI.deleteSkill(currentUser.id, skillId);
+        if (response.success) {
+          showAlert("skills-alert-container", "Skill removed successfully.", "info");
+          await fetchStudentSkills();
+        } else {
+          showAlert("skills-alert-container", response.message || "Failed to remove skill.", "danger");
+        }
+      } catch (err) {
+        showAlert("skills-alert-container", err.message || "Unable to remove skill.", "danger");
+      }
+    }
+
+    async function fetchCampusJobs() {
+      const loadingEl = document.getElementById("jobs-loading");
+      const containerEl = document.getElementById("jobs-container");
+      const emptyEl = document.getElementById("jobs-empty");
+      try {
+        loadingEl.style.display = "block";
+        containerEl.style.display = "none";
+        emptyEl.style.display = "none";
+        const response = await window.api.jobAPI.getAllJobs();
+        loadingEl.style.display = "none";
+        if (response.success && response.data && Array.isArray(response.data.jobs)) {
+          allJobs = response.data.jobs;
+          renderJobs(allJobs);
+        } else {
+          emptyEl.style.display = "block";
+        }
+      } catch (err) {
+        loadingEl.style.display = "none";
+        showAlert("alert-container", "Failed to load jobs: " + err.message, "danger");
+      }
+    }
+
+    function isJobApplied(jobId) {
+      return myApplications.some((app) => String(app.job_id) === String(jobId));
+    }
+
+    function getJobApplicationStatus(jobId) {
+      const match = myApplications.find((app) => String(app.job_id) === String(jobId));
+      return match ? match.status : null;
+    }
+
+    function renderJobs(jobs) {
+      const containerEl = document.getElementById("jobs-container");
+      const emptyEl = document.getElementById("jobs-empty");
+      if (!jobs || jobs.length === 0) {
+        containerEl.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      emptyEl.style.display = "none";
+      containerEl.style.display = "grid";
+
+      containerEl.innerHTML = jobs.map((job) => {
+        const packageDisplay = formatPackage(job.package);
+        const deadline = formatDate(job.application_deadline);
+        const branchDisplay = job.eligible_branch || "All Branches";
+        const minCgpa = job.minimum_cgpa !== undefined ? parseFloat(job.minimum_cgpa).toFixed(2) : "N/A";
+        const maxBacklogs = job.maximum_backlogs !== undefined ? job.maximum_backlogs : "N/A";
+        const appliedStatus = getJobApplicationStatus(job.id);
+        const alreadyApplied = !!appliedStatus;
+
+        let statusBadge = "";
+        if (alreadyApplied) {
+          statusBadge = '<span class="status-badge status-' + appliedStatus.toLowerCase() + '">' + escapeHtml(appliedStatus) + '</span>';
+        }
+
+        let applyBtnHtml = "";
+        if (alreadyApplied) {
+          applyBtnHtml = '<button class="btn btn-secondary btn-sm btn-block" disabled>✓ Already Applied</button>';
+        } else {
+          applyBtnHtml = '<button class="btn btn-primary btn-sm btn-block" onclick="handleApplyJob(' + job.id + ')">⚡ Apply Now</button>';
+        }
+
+        return '<article class="job-card" id="job-card-' + job.id + '">' +
+          '<div>' +
+            '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">' +
+              '<span class="job-company">' + escapeHtml(job.company_name || "Hiring Company") + '</span>' +
+              statusBadge +
+            '</div>' +
+            '<h3 class="job-title">' + escapeHtml(job.job_title) + '</h3>' +
+            '<div class="job-package-tag">' + packageDisplay + '</div>' +
+            '<p class="job-description">' + escapeHtml(job.job_description || "No detailed description provided.") + '</p>' +
+            '<ul class="job-details-list">' +
+              '<li class="job-details-item"><span class="job-details-label">Location:</span><span class="job-details-val">' + escapeHtml(job.job_location || "Not Specified") + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Eligible Branch:</span><span class="job-details-val">' + escapeHtml(branchDisplay) + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Minimum CGPA:</span><span class="job-details-val">' + minCgpa + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Max Backlogs:</span><span class="job-details-val">' + maxBacklogs + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Deadline:</span><span class="job-details-val">' + deadline + '</span></li>' +
+            '</ul>' +
+          '</div>' +
+          '<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">' +
+            '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">' +
+              '<button class="btn btn-outline btn-sm" onclick="openJobDetailsModal(' + job.id + ')">Details</button>' +
+              '<button class="btn btn-outline-primary btn-sm" onclick="quickCheckEligibility(' + job.id + ')">Eligibility</button>' +
+            '</div>' +
+            applyBtnHtml +
+          '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function setupSearch() {
+      const searchInput = document.getElementById("job-search");
+      if (!searchInput) return;
+      searchInput.addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        if (!term) {
+          renderJobs(allJobs);
+          return;
+        }
+        const filtered = allJobs.filter((j) => {
+          const title = (j.job_title || "").toLowerCase();
+          const comp = (j.company_name || "").toLowerCase();
+          const loc = (j.job_location || "").toLowerCase();
+          const branch = (j.eligible_branch || "").toLowerCase();
+          return title.includes(term) || comp.includes(term) || loc.includes(term) || branch.includes(term);
+        });
+        renderJobs(filtered);
+      });
+    }
+
+    function openJobDetailsModal(jobId) {
+      const job = allJobs.find((j) => String(j.id) === String(jobId));
+      if (!job) return;
+      selectedJobForModal = job;
+      const alreadyApplied = isJobApplied(job.id);
+
+      document.getElementById("job-modal-title").textContent = job.job_title;
+      document.getElementById("job-modal-heading").textContent = job.job_title;
+      document.getElementById("job-modal-company").textContent = job.company_name;
+      document.getElementById("job-modal-package").textContent = formatPackage(job.package);
+      document.getElementById("job-modal-desc").textContent = job.job_description || "No detailed description provided.";
+      document.getElementById("job-modal-loc").textContent = job.job_location || "Not Specified";
+      document.getElementById("job-modal-branch").textContent = job.eligible_branch || "All Branches";
+      document.getElementById("job-modal-cgpa").textContent = job.minimum_cgpa !== undefined ? parseFloat(job.minimum_cgpa).toFixed(2) : "N/A";
+      document.getElementById("job-modal-backlogs").textContent = job.maximum_backlogs !== undefined ? job.maximum_backlogs : "N/A";
+      document.getElementById("job-modal-deadline").textContent = formatDate(job.application_deadline);
+      document.getElementById("job-modal-eligibility-area").innerHTML = "";
+
+      const checkBtn = document.getElementById("modal-check-eligibility-btn");
+      const applyBtn = document.getElementById("modal-apply-btn");
+
+      checkBtn.onclick = () => checkEligibilityInModal(job.id);
+      applyBtn.onclick = () => handleApplyJob(job.id, true);
+
+      if (alreadyApplied) {
+        applyBtn.style.display = "inline-flex";
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = "✓ Already Applied";
+        applyBtn.classList.remove("btn-primary");
+        applyBtn.classList.add("btn-secondary");
+      } else {
+        applyBtn.style.display = "none";
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = "⚡ Apply Now";
+        applyBtn.classList.remove("btn-secondary");
+        applyBtn.classList.add("btn-primary");
+      }
+      document.getElementById("job-details-modal").classList.add("open");
+    }
+
+    function closeJobDetailsModal() {
+      document.getElementById("job-details-modal").classList.remove("open");
+      selectedJobForModal = null;
+    }
+
+    async function checkEligibilityInModal(jobId) {
+      const area = document.getElementById("job-modal-eligibility-area");
+      const checkBtn = document.getElementById("modal-check-eligibility-btn");
+      const applyBtn = document.getElementById("modal-apply-btn");
+      try {
+        setLoading(checkBtn, true, "🔍 Check Eligibility", "Evaluating...");
+        area.innerHTML = "";
+        const response = await window.api.jobAPI.checkEligibility(jobId, currentUser.id);
+        setLoading(checkBtn, false, "🔍 Check Eligibility");
+        if (response.success && response.data) {
+          const { eligible, reasons, missing_requirements } = response.data;
+          renderEligibilityResult(area, eligible, reasons, missing_requirements);
+          const alreadyApplied = isJobApplied(jobId);
+          if (eligible && !alreadyApplied) {
+            applyBtn.style.display = "inline-flex";
+          }
+        }
+      } catch (err) {
+        setLoading(checkBtn, false, "🔍 Check Eligibility");
+        area.innerHTML = '<div class="alert alert-danger">' + escapeHtml(err.message) + '</div>';
+      }
+    }
+
+    async function quickCheckEligibility(jobId) {
+      openJobDetailsModal(jobId);
+      await checkEligibilityInModal(jobId);
+    }
+
+    function renderEligibilityResult(container, isEligible, reasons, missing) {
+      reasons = reasons || [];
+      missing = missing || [];
+      if (isEligible) {
+        const reasonItems = reasons.map((r) => "<li>" + escapeHtml(r) + "</li>").join("");
+        container.innerHTML = '<div class="eligibility-box eligible">' +
+          '<div class="eligibility-title"><span>🎉</span> You are Eligible to Apply!</div>' +
+          '<p style="font-size: 0.9rem; margin-bottom: 0.35rem;">Your academic profile satisfies all recruiter requirements:</p>' +
+          '<ul class="eligibility-list">' + reasonItems + '</ul>' +
+        '</div>';
+      } else {
+        const missingItems = missing.map((m) => "<li><strong>" + escapeHtml(m) + "</strong></li>").join("");
+        container.innerHTML = '<div class="eligibility-box ineligible">' +
+          '<div class="eligibility-title"><span>⚠️</span> Not Eligible for this Position</div>' +
+          '<p style="font-size: 0.9rem; margin-bottom: 0.35rem;">The following requirement(s) were not met according to placement guidelines:</p>' +
+          '<ul class="eligibility-list">' + missingItems + '</ul>' +
+        '</div>';
+      }
+    }
+
+    async function handleApplyJob(jobId, fromModal) {
+      if (isJobApplied(jobId)) {
+        showAlert("alert-container", "You have already applied for this job drive.", "info");
+        if (fromModal) closeJobDetailsModal();
+        return;
+      }
+      try {
+        if (fromModal) {
+          const applyBtn = document.getElementById("modal-apply-btn");
+          setLoading(applyBtn, true, "⚡ Apply Now", "Submitting...");
+        }
+        const response = await window.api.applicationAPI.applyForJob({
+          user_id: currentUser.id,
+          job_id: jobId,
+        });
+        if (fromModal) {
+          closeJobDetailsModal();
+        }
+        showAlert("alert-container", "Application submitted successfully! Track your status in My Applications.", "success");
+        await fetchStudentApplications();
+        renderJobs(allJobs);
+      } catch (err) {
+        if (fromModal) {
+          const applyBtn = document.getElementById("modal-apply-btn");
+          setLoading(applyBtn, false, "⚡ Apply Now");
+          const area = document.getElementById("job-modal-eligibility-area");
+          if (err.status === 403) {
+            area.innerHTML = '<div class="eligibility-box ineligible"><div class="eligibility-title"><span>⚠️</span> Application Rejected</div><p>You do not satisfy eligibility criteria for this job posting.</p></div>';
+          } else {
+            area.innerHTML = '<div class="alert alert-danger">' + escapeHtml(err.message) + '</div>';
+          }
+        } else {
+          showAlert("alert-container", err.message || "Failed to submit application.", "danger");
+        }
+      }
+    }
+
+    async function fetchStudentApplications(showSuccessAlert) {
+      const loadingEl = document.getElementById("applications-loading");
+      const tableWrapper = document.getElementById("applications-table-wrapper");
+      const emptyEl = document.getElementById("applications-empty");
+      const countBadge = document.getElementById("app-count-badge");
+      try {
+        loadingEl.style.display = "block";
+        tableWrapper.style.display = "none";
+        emptyEl.style.display = "none";
+        const response = await window.api.applicationAPI.getStudentApplications(currentUser.id);
+        loadingEl.style.display = "none";
+        if (response.success && response.data && Array.isArray(response.data.applications)) {
+          myApplications = response.data.applications;
+          if (countBadge) {
+            countBadge.textContent = myApplications.length;
+            countBadge.style.display = myApplications.length > 0 ? "inline-block" : "none";
+          }
+          renderApplicationsUI();
+          if (showSuccessAlert) {
+            showAlert("alert-container", "Applications refreshed successfully.", "info");
+          }
+        } else {
+          emptyEl.style.display = "block";
+        }
+      } catch (err) {
+        loadingEl.style.display = "none";
+        showAlert("alert-container", "Failed to load applications: " + err.message, "danger");
+      }
+    }
+
+    function renderApplicationsUI() {
+      const tableWrapper = document.getElementById("applications-table-wrapper");
+      const tbody = document.getElementById("applications-table-body");
+      const emptyEl = document.getElementById("applications-empty");
+      if (!myApplications || myApplications.length === 0) {
+        tableWrapper.style.display = "none";
+        emptyEl.style.display = "block";
+        return;
+      }
+      emptyEl.style.display = "none";
+      tableWrapper.style.display = "block";
+      tbody.innerHTML = myApplications.map((app, idx) => {
+        const statusClass = (app.status || "applied").toLowerCase();
+        return "<tr>" +
+          "<td>" + (idx + 1) + "</td>" +
+          "<td><strong>" + escapeHtml(app.company_name || "Hiring Partner") + "</strong></td>" +
+          "<td>" + escapeHtml(app.job_title) + "</td>" +
+          "<td>" + formatDate(app.application_date) + "</td>" +
+          '<td><span class="status-badge status-' + statusClass + '">' + escapeHtml(app.status || "Applied") + '</span></td>' +
+        '</tr>';
+      }).join("");
+    }
+  </script>
+</body>
+</html>

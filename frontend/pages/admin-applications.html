@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Management | Admin Portal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="admin-dashboard.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>Placement Admin Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="admin-dashboard.html" class="nav-link ">Dashboard</a></li>
+        <li><a href="admin-companies.html" class="nav-link ">Companies</a></li>
+        <li><a href="admin-jobs.html" class="nav-link ">Jobs</a></li>
+        <li><a href="admin-students.html" class="nav-link ">Students</a></li>
+        <li><a href="admin-applications.html" class="nav-link active">Applications</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="admin-name-badge">Administrator</span>
+          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Header Row -->
+      <div class="page-header-row">
+        <div>
+          <h2>Student Job Applications</h2>
+          <p class="form-hint">Track recruitment status, evaluate candidate progress, and update selection stages</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="fetchApplications()">Refresh Data</button>
+      </div>
+
+      <!-- Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Search & Filters Bar -->
+      <div class="filter-bar">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <input 
+            type="text" 
+            id="app-search" 
+            class="form-control" 
+            placeholder="Search candidate name, email, company, or job title..." 
+            style="flex: 2; min-width: 250px;"
+          >
+
+          <select id="app-status-filter" class="form-select" style="flex: 1; min-width: 160px;">
+            <option value="">All Statuses</option>
+            <option value="Applied">Applied</option>
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Interview">Interview</option>
+            <option value="Selected">Selected</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+
+          <select id="app-company-filter" class="form-select" style="flex: 1; min-width: 160px;">
+            <option value="">All Companies</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Applications Table Card -->
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div id="apps-loading" class="loading-container" style="padding: 3rem;">
+            <div class="loading-spinner-large"></div>
+            <p>Loading candidate applications...</p>
+          </div>
+
+          <div id="apps-empty" class="empty-state" style="display: none; border: none;">
+            <div class="empty-state-icon">📝</div>
+            <h3>No Applications Found</h3>
+            <p>No student applications matched your criteria or none have been submitted yet.</p>
+          </div>
+
+          <div id="apps-table-container" class="table-responsive" style="display: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>Candidate</th>
+                  <th>Branch / CGPA</th>
+                  <th>Company</th>
+                  <th>Job Title</th>
+                  <th>Date Applied</th>
+                  <th>Status</th>
+                  <th style="width: 240px;">Update Status</th>
+                </tr>
+              </thead>
+              <tbody id="apps-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Training & Placement Cell.</p>
+      <ul class="footer-links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="javascript:void(0)" onclick="handleAdminLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    requireAdminAuth('admin-login.html');
+
+    let allApplications = [];
+    const ALLOWED_STATUSES = ['Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected'];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchApplications();
+      setupAppFilters();
+    });
+
+    async function fetchApplications() {
+      const loadingEl = document.getElementById('apps-loading');
+      const emptyEl = document.getElementById('apps-empty');
+      const tableContainer = document.getElementById('apps-table-container');
+
+      try {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableContainer.style.display = 'none';
+
+        const response = await window.api.adminAPI.getApplications();
+        loadingEl.style.display = 'none';
+
+        if (response.success && response.data && Array.isArray(response.data.applications)) {
+          allApplications = response.data.applications;
+          populateCompanyFilter(allApplications);
+          renderApplications(allApplications);
+        } else {
+          emptyEl.style.display = 'block';
+        }
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        showAlert('alert-container', 'Failed to load applications: ' + err.message, 'danger');
+      }
+    }
+
+    function populateCompanyFilter(apps) {
+      const companySelect = document.getElementById('app-company-filter');
+      const currentVal = companySelect.value;
+      const companies = [...new Set(apps.map(a => a.company_name).filter(Boolean))].sort();
+
+      companySelect.innerHTML = '<option value="">All Companies</option>' + 
+        companies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+      if (currentVal) companySelect.value = currentVal;
+    }
+
+    function renderApplications(apps) {
+      const emptyEl = document.getElementById('apps-empty');
+      const tableContainer = document.getElementById('apps-table-container');
+      const tbody = document.getElementById('apps-tbody');
+
+      if (!apps || apps.length === 0) {
+        emptyEl.style.display = 'block';
+        tableContainer.style.display = 'none';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      tableContainer.style.display = 'block';
+
+      tbody.innerHTML = apps.map(a => {
+        const currentStatus = a.status || 'Applied';
+        const statusClass = 'status-' + currentStatus.toLowerCase();
+
+        const optionsHtml = ALLOWED_STATUSES.map(s => {
+          const selected = s.toLowerCase() === currentStatus.toLowerCase() ? 'selected' : '';
+          return `<option value="${s}" ${selected}>${s}</option>`;
+        }).join('');
+
+        return `
+          <tr id="app-row-${a.id}">
+            <td><strong>#${a.id}</strong></td>
+            <td>
+              <strong style="color: var(--text-dark);">${escapeHtml(a.student_name)}</strong>
+              <div class="form-hint" style="margin-top: 2px;">${escapeHtml(a.student_email || '')}</div>
+            </td>
+            <td>
+              <span class="badge badge-primary">${escapeHtml(a.student_branch || '')}</span>
+              <span style="margin-left: 4px; font-weight: 600;">${a.student_cgpa !== undefined ? parseFloat(a.student_cgpa).toFixed(2) : '--'}</span>
+            </td>
+            <td>${escapeHtml(a.company_name)}</td>
+            <td>${escapeHtml(a.job_title)}</td>
+            <td>${formatDate(a.application_date)}</td>
+            <td>
+              <span id="badge-app-${a.id}" class="status-badge ${statusClass}">${escapeHtml(currentStatus)}</span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <select id="status-select-${a.id}" class="form-select" style="padding: 0.3rem 0.5rem; font-size: 0.84rem;">
+                  ${optionsHtml}
+                </select>
+                <button 
+                  id="status-btn-${a.id}" 
+                  class="btn btn-sm btn-primary" 
+                  style="white-space: nowrap;" 
+                  onclick="handleUpdateStatus(${a.id})"
+                >
+                  Save
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function setupAppFilters() {
+      const searchInput = document.getElementById('app-search');
+      const statusFilter = document.getElementById('app-status-filter');
+      const companyFilter = document.getElementById('app-company-filter');
+
+      function apply() {
+        const query = (searchInput.value || '').toLowerCase().trim();
+        const selectedStatus = (statusFilter.value || '').toLowerCase().trim();
+        const selectedCompany = (companyFilter.value || '').toLowerCase().trim();
+
+        const filtered = allApplications.filter(a => {
+          const matchQuery = !query || 
+            (a.student_name || '').toLowerCase().includes(query) ||
+            (a.student_email || '').toLowerCase().includes(query) ||
+            (a.company_name || '').toLowerCase().includes(query) ||
+            (a.job_title || '').toLowerCase().includes(query);
+
+          const matchStatus = !selectedStatus || 
+            (a.status || '').toLowerCase() === selectedStatus;
+
+          const matchCompany = !selectedCompany || 
+            (a.company_name || '').toLowerCase() === selectedCompany;
+
+          return matchQuery && matchStatus && matchCompany;
+        });
+
+        renderApplications(filtered);
+      }
+
+      searchInput.addEventListener('input', apply);
+      statusFilter.addEventListener('change', apply);
+      companyFilter.addEventListener('change', apply);
+    }
+
+    async function handleUpdateStatus(applicationId) {
+      clearAlert('alert-container');
+      const select = document.getElementById('status-select-' + applicationId);
+      const btn = document.getElementById('status-btn-' + applicationId);
+      const newStatus = select.value;
+
+      if (!newStatus) return;
+
+      try {
+        setLoading(btn, true, 'Save', '...');
+        const response = await window.api.adminAPI.updateApplicationStatus(applicationId, newStatus);
+        setLoading(btn, false, 'Save');
+
+        if (response.success && response.data && response.data.application) {
+          const updatedApp = response.data.application;
+          const targetStatus = updatedApp.status;
+
+          // Update in-memory applications array
+          const idx = allApplications.findIndex(a => String(a.id) === String(applicationId));
+          if (idx !== -1) {
+            allApplications[idx].status = targetStatus;
+          }
+
+          // Update badge in DOM
+          const badge = document.getElementById('badge-app-' + applicationId);
+          if (badge) {
+            badge.className = 'status-badge status-' + targetStatus.toLowerCase();
+            badge.textContent = targetStatus;
+          }
+
+          showAlert('alert-container', 'Application #' + applicationId + ' status updated to ' + targetStatus + '!', 'success');
+        } else {
+          showAlert('alert-container', response.message || 'Failed to update status.', 'danger');
+        }
+      } catch (err) {
+        setLoading(btn, false, 'Save');
+        showAlert('alert-container', err.message || 'Error updating status.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

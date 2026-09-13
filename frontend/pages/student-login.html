@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Login | College Placement Management System</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <span class="nav-brand-icon">CP</span>
+        <span>College Placement System</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="student-login.html" class="nav-link active">Student Login</a></li>
+        <li><a href="student-register.html" class="btn btn-sm btn-primary">Register</a></li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Login Container -->
+  <main class="main-content">
+    <div class="container auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2>Student Portal Login</h2>
+          <p>Enter your credentials to access placement drives and application status</p>
+        </div>
+
+        <!-- Dynamic Feedback Alert Container -->
+        <div id="alert-container"></div>
+
+        <!-- Login Form -->
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" id="email" name="email" class="form-control" placeholder="e.g. student@college.edu" required autofocus>
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password <span class="required">*</span></label>
+            <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <button type="submit" id="login-btn" class="btn btn-primary btn-block btn-lg">
+              Login to Dashboard
+            </button>
+          </div>
+        </form>
+
+        <div class="auth-footer">
+          Don't have an account yet? <a href="student-register.html">Register here</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. All rights reserved.</p>
+      <ul class="footer-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="student-register.html">Register</a></li>
+        <li><a href="admin-login.html">Admin Portal</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    // Redirect to dashboard if session already exists
+    requireGuest('student-dashboard.html');
+
+    const form = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('alert-container');
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email) {
+        showAlert('alert-container', 'Please enter your registered email address.', 'danger');
+        return;
+      }
+      if (!password) {
+        showAlert('alert-container', 'Please enter your password.', 'danger');
+        return;
+      }
+
+      try {
+        setLoading(loginBtn, true, 'Login to Dashboard', 'Authenticating...');
+
+        const response = await window.api.authAPI.login({ email, password });
+
+        if (response.success && response.data) {
+          const { user, student } = response.data;
+
+          // Verify role
+          if (user.role !== 'student') {
+            showAlert('alert-container', 'Access denied. This portal is for students only.', 'danger');
+            setLoading(loginBtn, false, 'Login to Dashboard');
+            return;
+          }
+
+          // Save session securely (no password ever saved)
+          setSession(user, student);
+
+          showAlert('alert-container', 'Login successful! Redirecting to your dashboard...', 'success');
+
+          setTimeout(() => {
+            window.location.href = 'student-dashboard.html';
+          }, 800);
+        } else {
+          showAlert('alert-container', response.message || 'Login failed.', 'danger');
+          setLoading(loginBtn, false, 'Login to Dashboard');
+        }
+      } catch (err) {
+        setLoading(loginBtn, false, 'Login to Dashboard');
+        showAlert('alert-container', err.message || 'Authentication error. Please check your credentials.', 'danger');
+      }
+    });
+  </script>
+</body>
+</html>

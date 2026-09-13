@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | College Placement Management System</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="admin-dashboard.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>Placement Admin Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="admin-dashboard.html" class="nav-link active">Dashboard</a></li>
+        <li><a href="admin-companies.html" class="nav-link ">Companies</a></li>
+        <li><a href="admin-jobs.html" class="nav-link ">Jobs</a></li>
+        <li><a href="admin-students.html" class="nav-link ">Students</a></li>
+        <li><a href="admin-applications.html" class="nav-link ">Applications</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="admin-name-badge">Administrator</span>
+          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Welcome Banner -->
+      <section class="welcome-banner" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);">
+        <div>
+          <span class="welcome-chip" style="margin-bottom: 0.5rem; display: inline-block;">Training & Placement Cell</span>
+          <h2 id="admin-welcome-title">Welcome, Placement Administrator!</h2>
+          <p>Monitor real-time campus recruitment drives, partner companies, student eligibility, and job applications.</p>
+        </div>
+        <div class="welcome-meta">
+          <div class="welcome-chip" id="admin-chip-dept">Dept: Placement Cell</div>
+          <div class="welcome-chip" id="admin-chip-role">Role: Administrator</div>
+        </div>
+      </section>
+
+      <!-- Summary Metrics Grid (Real Backend Data) -->
+      <section class="stats-grid" id="stats-section">
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: rgba(99, 102, 241, 0.15); color: #4f46e5;">🎓</div>
+          <div>
+            <div class="stat-value" id="stat-students">--</div>
+            <div class="stat-label">Registered Students</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: rgba(14, 165, 233, 0.15); color: #0284c7;">🏢</div>
+          <div>
+            <div class="stat-value" id="stat-companies">--</div>
+            <div class="stat-label">Partner Companies</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: rgba(16, 185, 129, 0.15); color: #059669;">💼</div>
+          <div>
+            <div class="stat-value" id="stat-jobs">--</div>
+            <div class="stat-label">Active Job Drives</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: rgba(245, 158, 11, 0.15); color: #d97706;">📝</div>
+          <div>
+            <div class="stat-value" id="stat-apps">--</div>
+            <div class="stat-label">Total Applications</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Hub Navigation Cards -->
+      <section style="margin-bottom: 2.5rem;">
+        <h3 style="margin-bottom: 1.25rem;">Management Sections</h3>
+        <div class="features-grid">
+          <div class="feature-card" style="cursor: pointer;" onclick="window.location.href='admin-companies.html'">
+            <div class="feature-icon" style="background-color: rgba(14, 165, 233, 0.15); color: #0284c7;">🏢</div>
+            <h3>Company Management</h3>
+            <p>Add new recruiting enterprises, update corporate contact profiles, and manage recruiter directory.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">Manage Companies &rarr;</span>
+          </div>
+
+          <div class="feature-card" style="cursor: pointer;" onclick="window.location.href='admin-jobs.html'">
+            <div class="feature-icon" style="background-color: rgba(16, 185, 129, 0.15); color: #059669;">💼</div>
+            <h3>Job Management</h3>
+            <p>Publish campus recruitment job drives, configure eligibility criteria (CGPA, backlogs, branch), and packages.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">Manage Job Openings &rarr;</span>
+          </div>
+
+          <div class="feature-card" style="cursor: pointer;" onclick="window.location.href='admin-students.html'">
+            <div class="feature-icon" style="background-color: rgba(99, 102, 241, 0.15); color: #4f46e5;">🎓</div>
+            <h3>Student Management</h3>
+            <p>Search candidate database, review academic profiles, verified skills, and track placement history.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">View Student Directory &rarr;</span>
+          </div>
+
+          <div class="feature-card" style="cursor: pointer;" onclick="window.location.href='admin-applications.html'">
+            <div class="feature-icon" style="background-color: rgba(245, 158, 11, 0.15); color: #d97706;">📝</div>
+            <h3>Application Management</h3>
+            <p>Review submitted candidate applications, filter by drive or candidate, and update recruitment status.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; font-weight: 600; color: var(--primary);">Manage Applications &rarr;</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Applications Overview -->
+      <section class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Recent Application Activity</h3>
+            <p class="form-hint" style="margin-bottom: 0;">Latest candidate submissions across campus recruitment drives</p>
+          </div>
+          <a href="admin-applications.html" class="btn btn-outline-primary btn-sm">View All Applications &rarr;</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div id="recent-loading" class="loading-container" style="padding: 2rem;">
+            <div class="loading-spinner-large"></div>
+            <p>Loading recent application activity...</p>
+          </div>
+
+          <div id="recent-empty" class="empty-state" style="display: none; border: none;">
+            <div class="empty-state-icon">📋</div>
+            <h3>No applications submitted yet</h3>
+            <p>When student candidates apply for campus drives, their applications will be summarized here.</p>
+          </div>
+
+          <div id="recent-table-container" class="table-responsive" style="display: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>App #</th>
+                  <th>Candidate</th>
+                  <th>Company</th>
+                  <th>Job Title</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-apps-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Training & Placement Cell.</p>
+      <ul class="footer-links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="javascript:void(0)" onclick="handleAdminLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    // Enforce Administrator Authentication
+    requireAdminAuth('admin-login.html');
+
+    const admin = getStoredAdmin();
+    if (admin) {
+      if (admin.name) {
+        document.getElementById('admin-welcome-title').textContent = 'Welcome, ' + admin.name + '!';
+      }
+      if (admin.department) {
+        document.getElementById('admin-chip-dept').textContent = 'Dept: ' + admin.department;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadDashboardData();
+    });
+
+    async function loadDashboardData() {
+      try {
+        // Fetch all 4 metrics concurrently from real backend APIs
+        const [studentsRes, companiesRes, jobsRes, appsRes] = await Promise.all([
+          window.api.adminAPI.getStudents(),
+          window.api.adminAPI.getCompanies(),
+          window.api.adminAPI.getJobs(),
+          window.api.adminAPI.getApplications()
+        ]);
+
+        const totalStudents = (studentsRes.success && studentsRes.data && studentsRes.data.students) 
+          ? studentsRes.data.students.length : 0;
+        const totalCompanies = (companiesRes.success && companiesRes.data && companiesRes.data.companies) 
+          ? companiesRes.data.companies.length : 0;
+        const totalJobs = (jobsRes.success && jobsRes.data && jobsRes.data.jobs) 
+          ? jobsRes.data.jobs.length : 0;
+        const applications = (appsRes.success && appsRes.data && appsRes.data.applications) 
+          ? appsRes.data.applications : [];
+
+        document.getElementById('stat-students').textContent = totalStudents;
+        document.getElementById('stat-companies').textContent = totalCompanies;
+        document.getElementById('stat-jobs').textContent = totalJobs;
+        document.getElementById('stat-apps').textContent = applications.length;
+
+        // Render Recent 5 Applications
+        const loadingEl = document.getElementById('recent-loading');
+        const emptyEl = document.getElementById('recent-empty');
+        const tableContainer = document.getElementById('recent-table-container');
+        const tbody = document.getElementById('recent-apps-tbody');
+
+        loadingEl.style.display = 'none';
+
+        if (applications.length === 0) {
+          emptyEl.style.display = 'block';
+          tableContainer.style.display = 'none';
+        } else {
+          emptyEl.style.display = 'none';
+          tableContainer.style.display = 'block';
+
+          const recent5 = applications.slice(0, 5);
+          tbody.innerHTML = recent5.map(app => {
+            const statusClass = 'status-' + (app.status || 'applied').toLowerCase();
+            return `
+              <tr>
+                <td><strong>#${app.id}</strong></td>
+                <td>
+                  <div style="font-weight: 600; color: var(--text-dark);">${escapeHtml(app.student_name)}</div>
+                  <small class="form-hint">${escapeHtml(app.student_email || '')}</small>
+                </td>
+                <td>${escapeHtml(app.company_name)}</td>
+                <td>${escapeHtml(app.job_title)}</td>
+                <td>${formatDate(app.application_date)}</td>
+                <td><span class="status-badge ${statusClass}">${escapeHtml(app.status)}</span></td>
+                <td>
+                  <a href="admin-applications.html" class="btn btn-outline btn-sm table-action-btn">Manage</a>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+      } catch (err) {
+        console.error('Error loading admin dashboard metrics:', err);
+        showAlert('alert-container', 'Unable to load some dashboard metrics: ' + err.message, 'warning');
+      }
+    }
+  </script>
+</body>
+</html>

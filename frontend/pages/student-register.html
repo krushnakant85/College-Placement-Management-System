@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration | College Placement Management System</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <span class="nav-brand-icon">CP</span>
+        <span>College Placement System</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="student-login.html" class="nav-link">Student Login</a></li>
+        <li><a href="student-register.html" class="nav-link active">Register</a></li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Registration Form Container -->
+  <main class="main-content">
+    <div class="container auth-wrapper">
+      <div class="auth-card auth-wide">
+        <div class="auth-header">
+          <h2>Student Registration</h2>
+          <p>Create your candidate profile to apply for campus recruitment drives</p>
+        </div>
+
+        <!-- Dynamic Feedback Alert Container -->
+        <div id="alert-container"></div>
+
+        <!-- Registration Form -->
+        <form id="register-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name" class="form-label">Full Name <span class="required">*</span></label>
+              <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Krushnakant Patil" required>
+            </div>
+            <div class="form-group">
+              <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+              <input type="email" id="email" name="email" class="form-control" placeholder="e.g. student@college.edu" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password" class="form-label">Password <span class="required">*</span></label>
+              <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+              <div class="form-hint">Must be at least 6 characters long</div>
+            </div>
+            <div class="form-group">
+              <label for="phone" class="form-label">Phone Number <span class="required">*</span></label>
+              <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+              <div class="form-hint">Minimum 10 digits</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="branch" class="form-label">Branch / Department <span class="required">*</span></label>
+              <select id="branch" name="branch" class="form-select" required>
+                <option value="">-- Select Your Branch --</option>
+                <option value="CSBS">Computer Science & Business Systems (CSBS)</option>
+                <option value="CSE">Computer Science & Engineering (CSE)</option>
+                <option value="IT">Information Technology (IT)</option>
+                <option value="ECE">Electronics & Communication (ECE)</option>
+                <option value="EEE">Electrical & Electronics (EEE)</option>
+                <option value="MECH">Mechanical Engineering (MECH)</option>
+                <option value="CIVIL">Civil Engineering (CIVIL)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="student_id" class="form-label">Student Roll ID (Optional)</label>
+              <input type="text" id="student_id" name="student_id" class="form-control" placeholder="e.g. CSBS2026001">
+              <div class="form-hint">Leave blank to auto-generate a unique roll ID</div>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="cgpa" class="form-label">Current CGPA <span class="required">*</span></label>
+              <input type="number" id="cgpa" name="cgpa" class="form-control" step="0.01" min="0" max="10" placeholder="e.g. 8.75" required>
+              <div class="form-hint">0.00 to 10.00</div>
+            </div>
+            <div class="form-group">
+              <label for="graduation_year" class="form-label">Graduation Year <span class="required">*</span></label>
+              <input type="number" id="graduation_year" name="graduation_year" class="form-control" placeholder="e.g. 2026" min="2000" max="2035" required>
+              <div class="form-hint">Year of passing</div>
+            </div>
+            <div class="form-group">
+              <label for="backlogs" class="form-label">Active Backlogs</label>
+              <input type="number" id="backlogs" name="backlogs" class="form-control" value="0" min="0" required>
+              <div class="form-hint">0 if all subjects cleared</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-block btn-lg">
+              Register for Campus Placements
+            </button>
+          </div>
+        </form>
+
+        <div class="auth-footer">
+          Already registered? <a href="student-login.html">Login to your account</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. All rights reserved.</p>
+      <ul class="footer-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="student-login.html">Login</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    // Redirect if already logged in
+    requireGuest('student-dashboard.html');
+
+    const form = document.getElementById('register-form');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('alert-container');
+
+      // Extract form values
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const phone = document.getElementById('phone').value.trim();
+      const branch = document.getElementById('branch').value.trim();
+      const student_id = document.getElementById('student_id').value.trim();
+      const cgpa = document.getElementById('cgpa').value.trim();
+      const graduation_year = document.getElementById('graduation_year').value.trim();
+      const backlogs = document.getElementById('backlogs').value.trim();
+
+      // Client-side validations
+      if (!name) {
+        showAlert('alert-container', 'Full Name is required.', 'danger');
+        return;
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showAlert('alert-container', 'Please provide a valid email address.', 'danger');
+        return;
+      }
+      if (!password || password.length < 6) {
+        showAlert('alert-container', 'Password must be at least 6 characters long.', 'danger');
+        return;
+      }
+      if (!phone || phone.length < 10) {
+        showAlert('alert-container', 'Please enter a valid phone number (at least 10 digits).', 'danger');
+        return;
+      }
+      if (!branch) {
+        showAlert('alert-container', 'Please select your engineering branch.', 'danger');
+        return;
+      }
+      const parsedCgpa = parseFloat(cgpa);
+      if (isNaN(parsedCgpa) || parsedCgpa < 0 || parsedCgpa > 10) {
+        showAlert('alert-container', 'CGPA must be a valid number between 0.00 and 10.00.', 'danger');
+        return;
+      }
+      const parsedYear = parseInt(graduation_year, 10);
+      if (isNaN(parsedYear) || parsedYear < 2000) {
+        showAlert('alert-container', 'Please enter a valid graduation year.', 'danger');
+        return;
+      }
+
+      // Build payload matching backend expectations
+      const payload = {
+        name,
+        email,
+        password,
+        phone,
+        branch,
+        cgpa: parsedCgpa,
+        graduation_year: parsedYear,
+        backlogs: parseInt(backlogs, 10) || 0,
+      };
+
+      if (student_id) {
+        payload.student_id = student_id;
+      }
+
+      try {
+        setLoading(submitBtn, true, 'Register for Campus Placements', 'Registering...');
+        const response = await window.api.authAPI.register(payload);
+
+        showAlert(
+          'alert-container',
+          'Registration successful! Your Student ID is ' +
+            (response.data?.student?.student_id || 'assigned') +
+            '. Redirecting to login...',
+          'success'
+        );
+
+        form.reset();
+
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          window.location.href = 'student-login.html';
+        }, 1800);
+      } catch (err) {
+        setLoading(submitBtn, false, 'Register for Campus Placements');
+        showAlert('alert-container', err.message || 'Registration failed. Please try again.', 'danger');
+      }
+    });
+  </script>
+</body>
+</html>

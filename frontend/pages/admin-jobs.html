@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('placementTheme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Management | Admin Portal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="admin-dashboard.html" class="nav-brand">
+        <span class="nav-brand-icon nav-brand-admin">AP</span>
+        <span>Placement Admin Portal</span>
+      </a>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
+      <ul class="nav-links">
+        <li><a href="admin-dashboard.html" class="nav-link ">Dashboard</a></li>
+        <li><a href="admin-companies.html" class="nav-link ">Companies</a></li>
+        <li><a href="admin-jobs.html" class="nav-link active">Jobs</a></li>
+        <li><a href="admin-students.html" class="nav-link ">Students</a></li>
+        <li><a href="admin-applications.html" class="nav-link ">Applications</a></li>
+        <li class="nav-user">
+          <span class="user-badge" id="admin-name-badge">Administrator</span>
+          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
+        </li>
+        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Header Row -->
+      <div class="page-header-row">
+        <div>
+          <h2>Campus Job Drives</h2>
+          <p class="form-hint">Publish job openings, configure recruitment packages, and enforce academic eligibility criteria</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddJobModal()">
+          + Post New Job Opening
+        </button>
+      </div>
+
+      <!-- Global Alert Container -->
+      <div id="alert-container"></div>
+
+      <!-- Search & Filters -->
+      <div class="filter-bar">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <input 
+            type="text" 
+            id="job-search" 
+            class="form-control search-input" 
+            placeholder="Search by job title, company, location, branch..." 
+            style="flex: 1; min-width: 250px;"
+          >
+          <button class="btn btn-outline btn-sm" onclick="fetchJobs()">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Jobs Table Card -->
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div id="jobs-loading" class="loading-container" style="padding: 3rem;">
+            <div class="loading-spinner-large"></div>
+            <p>Loading campus job postings...</p>
+          </div>
+
+          <div id="jobs-empty" class="empty-state" style="display: none; border: none;">
+            <div class="empty-state-icon">💼</div>
+            <h3>No Job Postings Found</h3>
+            <p>No active campus recruitment drives are listed. Click "+ Post New Job Opening" to add a new hiring drive.</p>
+          </div>
+
+          <div id="jobs-table-container" class="table-responsive" style="display: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">ID</th>
+                  <th>Company</th>
+                  <th>Job Title</th>
+                  <th>Branch</th>
+                  <th>Min CGPA</th>
+                  <th>Max Backlogs</th>
+                  <th>Package (CTC)</th>
+                  <th>Location</th>
+                  <th>Deadline</th>
+                  <th style="width: 170px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Add / Edit Job Modal -->
+  <div class="modal-backdrop" id="job-modal">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="job-modal-title">Post Job Opening</h3>
+        <button class="modal-close" onclick="closeJobModal()" aria-label="Close">&times;</button>
+      </div>
+      <form id="job-form" novalidate>
+        <div class="modal-body">
+          <div id="job-modal-alert"></div>
+          <input type="hidden" id="modal-job-id">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="job-company-select" class="form-label">Hiring Company <span class="required">*</span></label>
+              <select id="job-company-select" class="form-select" required>
+                <option value="">-- Select Company --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="job-title-input" class="form-label">Job Title <span class="required">*</span></label>
+              <input type="text" id="job-title-input" class="form-control" placeholder="e.g. Full Stack Engineer" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="job-desc-input" class="form-label">Job Description <span class="required">*</span></label>
+            <textarea id="job-desc-input" class="form-control" rows="3" placeholder="Key responsibilities, project scope, requirements..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="job-package-input" class="form-label">Annual CTC Package (INR) <span class="required">*</span></label>
+              <input type="number" id="job-package-input" class="form-control" placeholder="e.g. 1200000" min="10000" step="1000" required>
+              <div class="form-hint">Annual CTC in Rupees (e.g. 1200000 = 12 LPA)</div>
+            </div>
+            <div class="form-group">
+              <label for="job-location-input" class="form-label">Job Location <span class="required">*</span></label>
+              <input type="text" id="job-location-input" class="form-control" placeholder="e.g. Bengaluru / Pune" required>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="job-branch-input" class="form-label">Eligible Branch <span class="required">*</span></label>
+              <input type="text" id="job-branch-input" class="form-control" placeholder="e.g. CSBS,CSE,IT" required>
+              <div class="form-hint">Comma-separated or 'All'</div>
+            </div>
+            <div class="form-group">
+              <label for="job-cgpa-input" class="form-label">Min CGPA <span class="required">*</span></label>
+              <input type="number" id="job-cgpa-input" class="form-control" placeholder="e.g. 7.50" min="0" max="10" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="job-backlogs-input" class="form-label">Max Backlogs <span class="required">*</span></label>
+              <input type="number" id="job-backlogs-input" class="form-control" placeholder="e.g. 0" min="0" step="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="job-deadline-input" class="form-label">Application Deadline <span class="required">*</span></label>
+            <input type="date" id="job-deadline-input" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeJobModal()">Cancel</button>
+          <button type="submit" id="save-job-btn" class="btn btn-primary">Save Job Posting</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Job Details Modal -->
+  <div class="modal-backdrop" id="view-job-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="view-job-title">Job Details</h3>
+        <button class="modal-close" onclick="closeViewJobModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <span class="job-company" id="view-job-company"></span>
+          <h2 id="view-job-heading" style="margin-top: 0.25rem;"></h2>
+          <div id="view-job-package" class="job-package-tag" style="margin-top: 0.5rem;"></div>
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <h4>Description</h4>
+          <p id="view-job-desc" style="white-space: pre-line; color: var(--text-body);"></p>
+        </div>
+        <div>
+          <h4>Eligibility Criteria</h4>
+          <ul class="job-details-list">
+            <li class="job-details-item"><span class="job-details-label">Eligible Branch:</span><span class="job-details-val" id="view-job-branch"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Minimum CGPA:</span><span class="job-details-val" id="view-job-cgpa"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Max Backlogs:</span><span class="job-details-val" id="view-job-backlogs"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Location:</span><span class="job-details-val" id="view-job-loc"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Application Deadline:</span><span class="job-details-val" id="view-job-deadline"></span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeViewJobModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Job Confirmation Modal -->
+  <div class="modal-backdrop" id="delete-job-modal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Job Deletion</h3>
+        <button class="modal-close" onclick="closeDeleteJobModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="delete-job-alert"></div>
+        <p>Are you sure you want to delete <strong id="delete-job-title-display">this job posting</strong>?</p>
+        <p class="form-hint" style="color: var(--danger-text);">
+          Note: The backend will reject deletion if candidate applications exist for this job.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeDeleteJobModal()">Cancel</button>
+        <button type="button" id="confirm-delete-job-btn" class="btn btn-danger" onclick="executeDeleteJob()">
+          Delete Job
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 College Placement Management System. Training & Placement Cell.</p>
+      <ul class="footer-links">
+        <li><a href="admin-dashboard.html">Dashboard</a></li>
+        <li><a href="javascript:void(0)" onclick="handleAdminLogout()">Logout</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    requireAdminAuth('admin-login.html');
+
+    let allJobs = [];
+    let companyList = [];
+    let jobToDeleteId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadCompaniesDropdown();
+      await fetchJobs();
+      setupJobSearch();
+    });
+
+    async function loadCompaniesDropdown() {
+      try {
+        const response = await window.api.adminAPI.getCompanies();
+        if (response.success && response.data && Array.isArray(response.data.companies)) {
+          companyList = response.data.companies;
+          const select = document.getElementById('job-company-select');
+          select.innerHTML = '<option value="">-- Select Company --</option>' + 
+            companyList.map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (${escapeHtml(c.location || '')})</option>`).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load companies for dropdown:', err);
+      }
+    }
+
+    async function fetchJobs() {
+      const loadingEl = document.getElementById('jobs-loading');
+      const emptyEl = document.getElementById('jobs-empty');
+      const tableContainer = document.getElementById('jobs-table-container');
+
+      try {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        tableContainer.style.display = 'none';
+
+        const response = await window.api.adminAPI.getJobs();
+        loadingEl.style.display = 'none';
+
+        if (response.success && response.data && Array.isArray(response.data.jobs)) {
+          allJobs = response.data.jobs;
+          renderJobs(allJobs);
+        } else {
+          emptyEl.style.display = 'block';
+        }
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        showAlert('alert-container', 'Failed to load jobs: ' + err.message, 'danger');
+      }
+    }
+
+    function renderJobs(jobs) {
+      const emptyEl = document.getElementById('jobs-empty');
+      const tableContainer = document.getElementById('jobs-table-container');
+      const tbody = document.getElementById('jobs-tbody');
+
+      if (!jobs || jobs.length === 0) {
+        emptyEl.style.display = 'block';
+        tableContainer.style.display = 'none';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      tableContainer.style.display = 'block';
+
+      tbody.innerHTML = jobs.map(j => {
+        return `
+          <tr id="job-row-${j.id}">
+            <td><strong>#${j.id}</strong></td>
+            <td><strong style="color: var(--text-dark);">${escapeHtml(j.company_name)}</strong></td>
+            <td>${escapeHtml(j.job_title)}</td>
+            <td><span class="badge badge-primary">${escapeHtml(j.eligible_branch || 'All')}</span></td>
+            <td>${parseFloat(j.minimum_cgpa).toFixed(2)}</td>
+            <td>${j.maximum_backlogs}</td>
+            <td><strong>${formatPackage(j.package)}</strong></td>
+            <td>${escapeHtml(j.job_location)}</td>
+            <td>${formatDate(j.application_deadline)}</td>
+            <td>
+              <div class="table-actions">
+                <button class="btn btn-sm btn-outline table-action-btn" onclick="openViewJobModal(${j.id})">Details</button>
+                <button class="btn btn-sm btn-outline-primary table-action-btn" onclick="openEditJobModal(${j.id})">Edit</button>
+                <button class="btn btn-sm btn-danger table-action-btn" onclick="openDeleteJobModal(${j.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function setupJobSearch() {
+      const searchInput = document.getElementById('job-search');
+      if (!searchInput) return;
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+          renderJobs(allJobs);
+          return;
+        }
+
+        const filtered = allJobs.filter(j => {
+          const title = (j.job_title || '').toLowerCase();
+          const comp = (j.company_name || '').toLowerCase();
+          const loc = (j.job_location || '').toLowerCase();
+          const branch = (j.eligible_branch || '').toLowerCase();
+          return title.includes(query) || comp.includes(query) || loc.includes(query) || branch.includes(query);
+        });
+
+        renderJobs(filtered);
+      });
+    }
+
+    // Modal Operations
+    function openAddJobModal() {
+      clearAlert('job-modal-alert');
+      document.getElementById('job-modal-title').textContent = 'Post Job Opening';
+      document.getElementById('modal-job-id').value = '';
+      document.getElementById('job-company-select').value = '';
+      document.getElementById('job-company-select').disabled = false;
+      document.getElementById('job-title-input').value = '';
+      document.getElementById('job-desc-input').value = '';
+      document.getElementById('job-package-input').value = '';
+      document.getElementById('job-location-input').value = '';
+      document.getElementById('job-branch-input').value = 'CSBS,CSE,IT';
+      document.getElementById('job-cgpa-input').value = '7.00';
+      document.getElementById('job-backlogs-input').value = '0';
+      document.getElementById('job-deadline-input').value = '';
+      document.getElementById('job-modal').classList.add('open');
+    }
+
+    function openEditJobModal(jobId) {
+      clearAlert('job-modal-alert');
+      const job = allJobs.find(j => String(j.id) === String(jobId));
+      if (!job) return;
+
+      document.getElementById('job-modal-title').textContent = 'Edit Job Opening';
+      document.getElementById('modal-job-id').value = job.id;
+      document.getElementById('job-company-select').value = job.company_id || '';
+      document.getElementById('job-company-select').disabled = true; // company is usually fixed
+      document.getElementById('job-title-input').value = job.job_title || '';
+      document.getElementById('job-desc-input').value = job.job_description || '';
+      document.getElementById('job-package-input').value = job.package || '';
+      document.getElementById('job-location-input').value = job.job_location || '';
+      document.getElementById('job-branch-input').value = job.eligible_branch || '';
+      document.getElementById('job-cgpa-input').value = job.minimum_cgpa !== undefined ? job.minimum_cgpa : '';
+      document.getElementById('job-backlogs-input').value = job.maximum_backlogs !== undefined ? job.maximum_backlogs : '';
+      
+      if (job.application_deadline) {
+        const d = new Date(job.application_deadline);
+        if (!isNaN(d.getTime())) {
+          document.getElementById('job-deadline-input').value = d.toISOString().split('T')[0];
+        }
+      }
+
+      document.getElementById('job-modal').classList.add('open');
+    }
+
+    function closeJobModal() {
+      document.getElementById('job-modal').classList.remove('open');
+    }
+
+    document.getElementById('job-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert('job-modal-alert');
+
+      const id = document.getElementById('modal-job-id').value;
+      const company_id = document.getElementById('job-company-select').value;
+      const job_title = document.getElementById('job-title-input').value.trim();
+      const job_description = document.getElementById('job-desc-input').value.trim();
+      const packageVal = parseFloat(document.getElementById('job-package-input').value);
+      const job_location = document.getElementById('job-location-input').value.trim();
+      const eligible_branch = document.getElementById('job-branch-input').value.trim();
+      const minimum_cgpa = parseFloat(document.getElementById('job-cgpa-input').value);
+      const maximum_backlogs = parseInt(document.getElementById('job-backlogs-input').value, 10);
+      const application_deadline = document.getElementById('job-deadline-input').value;
+
+      if (!id && !company_id) {
+        showAlert('job-modal-alert', 'Please select a hiring company.', 'danger');
+        return;
+      }
+      if (!job_title) {
+        showAlert('job-modal-alert', 'Job title is required.', 'danger');
+        return;
+      }
+      if (!job_description) {
+        showAlert('job-modal-alert', 'Job description is required.', 'danger');
+        return;
+      }
+      if (isNaN(packageVal) || packageVal <= 0) {
+        showAlert('job-modal-alert', 'Valid package salary in INR is required.', 'danger');
+        return;
+      }
+      if (!job_location) {
+        showAlert('job-modal-alert', 'Job location is required.', 'danger');
+        return;
+      }
+      if (!eligible_branch) {
+        showAlert('job-modal-alert', 'Eligible branch is required.', 'danger');
+        return;
+      }
+      if (isNaN(minimum_cgpa) || minimum_cgpa < 0 || minimum_cgpa > 10) {
+        showAlert('job-modal-alert', 'Minimum CGPA must be between 0.00 and 10.00.', 'danger');
+        return;
+      }
+      if (isNaN(maximum_backlogs) || maximum_backlogs < 0) {
+        showAlert('job-modal-alert', 'Maximum backlogs must be 0 or greater.', 'danger');
+        return;
+      }
+      if (!application_deadline) {
+        showAlert('job-modal-alert', 'Application deadline date is required.', 'danger');
+        return;
+      }
+
+      const payload = {
+        job_title,
+        job_description,
+        package: packageVal,
+        job_location,
+        eligible_branch,
+        minimum_cgpa,
+        maximum_backlogs,
+        application_deadline
+      };
+
+      if (!id) {
+        payload.company_id = company_id;
+      }
+
+      const saveBtn = document.getElementById('save-job-btn');
+
+      try {
+        setLoading(saveBtn, true, 'Save Job Posting', 'Saving...');
+        let response;
+        if (id) {
+          response = await window.api.adminAPI.updateJob(id, payload);
+        } else {
+          response = await window.api.adminAPI.createJob(payload);
+        }
+        setLoading(saveBtn, false, 'Save Job Posting');
+
+        if (response.success) {
+          closeJobModal();
+          showAlert('alert-container', id ? 'Job updated successfully!' : 'Job posted successfully!', 'success');
+          await fetchJobs();
+        } else {
+          showAlert('job-modal-alert', response.message || 'Operation failed.', 'danger');
+        }
+      } catch (err) {
+        setLoading(saveBtn, false, 'Save Job Posting');
+        showAlert('job-modal-alert', err.message || 'Failed to save job.', 'danger');
+      }
+    });
+
+    function openViewJobModal(jobId) {
+      const job = allJobs.find(j => String(j.id) === String(jobId));
+      if (!job) return;
+
+      document.getElementById('view-job-company').textContent = job.company_name;
+      document.getElementById('view-job-heading').textContent = job.job_title;
+      document.getElementById('view-job-package').textContent = formatPackage(job.package);
+      document.getElementById('view-job-desc').textContent = job.job_description;
+      document.getElementById('view-job-branch').textContent = job.eligible_branch || 'All Branches';
+      document.getElementById('view-job-cgpa').textContent = parseFloat(job.minimum_cgpa).toFixed(2);
+      document.getElementById('view-job-backlogs').textContent = job.maximum_backlogs;
+      document.getElementById('view-job-loc').textContent = job.job_location;
+      document.getElementById('view-job-deadline').textContent = formatDate(job.application_deadline);
+      document.getElementById('view-job-modal').classList.add('open');
+    }
+
+    function closeViewJobModal() {
+      document.getElementById('view-job-modal').classList.remove('open');
+    }
+
+    function openDeleteJobModal(jobId) {
+      clearAlert('delete-job-alert');
+      const job = allJobs.find(j => String(j.id) === String(jobId));
+      if (!job) return;
+
+      jobToDeleteId = jobId;
+      document.getElementById('delete-job-title-display').textContent = job.job_title + ' (' + job.company_name + ')';
+      document.getElementById('delete-job-modal').classList.add('open');
+    }
+
+    function closeDeleteJobModal() {
+      jobToDeleteId = null;
+      document.getElementById('delete-job-modal').classList.remove('open');
+    }
+
+    async function executeDeleteJob() {
+      if (!jobToDeleteId) return;
+      clearAlert('delete-job-alert');
+      const deleteBtn = document.getElementById('confirm-delete-job-btn');
+
+      try {
+        setLoading(deleteBtn, true, 'Delete Job', 'Deleting...');
+        const response = await window.api.adminAPI.deleteJob(jobToDeleteId);
+        setLoading(deleteBtn, false, 'Delete Job');
+
+        if (response.success) {
+          closeDeleteJobModal();
+          showAlert('alert-container', 'Job opening deleted successfully.', 'success');
+          await fetchJobs();
+        } else {
+          showAlert('delete-job-alert', response.message || 'Failed to delete job.', 'danger');
+        }
+      } catch (err) {
+        setLoading(deleteBtn, false, 'Delete Job');
+        showAlert('delete-job-alert', err.message || 'Error deleting job opening.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>
