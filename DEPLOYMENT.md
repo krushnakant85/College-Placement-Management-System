@@ -59,26 +59,79 @@ The backend is an Express.js REST API located in `backend/`.
 
 ---
 
-### C. MySQL Database Deployment
-The system utilizes a relational MySQL 8.0+ database named `college_placement_system`.
+### C. Production MySQL Database Preparation & Setup Guide
 
-- **Recommended Platforms**: AWS RDS (MySQL), DigitalOcean Managed Database, PlanetScale, Aiven, or self-hosted MySQL on a private VPC.
-- **Deployment Steps**:
-  1. Provision a MySQL 8.0+ database instance with UTF8MB4 character encoding.
-  2. Execute the schema migration and initial seed data from `database/schema.sql`:
-     ```bash
-     mysql -h <DATABASE_HOST> -P <DATABASE_PORT> -u <DATABASE_USER> -p <DATABASE_NAME> < database/schema.sql
-     ```
-  3. Verify that all 8 tables are created:
-     - `users`
-     - `students`
-     - `admins`
-     - `companies`
-     - `jobs`
-     - `skills`
-     - `student_skills`
-     - `applications`
-  4. Verify relational integrity constraints, foreign keys, and default seed administrative records.
+> **Provider Selection Notice**: No external cloud database provider has been selected automatically. The user must manually choose and create a production MySQL 8.0+ database (e.g. AWS RDS MySQL, DigitalOcean Managed Database, Aiven, PlanetScale, or an institutional server). The local database (\`localhost:3306\`) is for local development only and must not be treated as the production database.
+
+Follow these 10 steps (A through J) to prepare and initialize the production database:
+
+1. **A. Create a Production MySQL Database**:
+   - Log into your chosen cloud provider console (e.g., AWS RDS, DigitalOcean, Aiven, or private VPS).
+   - Create a MySQL 8.0+ instance configured with UTF-8 (\`utf8mb4\`) character set and a robust root/admin password.
+   - Configure firewall or security groups to allow inbound MySQL traffic from your backend hosting provider's IP range or VPC.
+
+2. **B. Obtain the Production Database Host**:
+   - Copy the public or private endpoint address (e.g. \`<production-db-host>\`).
+
+3. **C. Obtain the Production Database Port**:
+   - The default MySQL port is \`3306\`. If your cloud provider assigns a custom port, note it down.
+
+4. **D. Obtain the Production Database Username**:
+   - Obtain the administrative or application user (e.g. \`<production-db-user>\`).
+
+5. **E. Obtain the Production Database Password**:
+   - Securely record the generated password (\`<production-db-password>\`). Never commit this secret into source control.
+
+6. **F. Create/Select the Database Name**:
+   - Select or create the database name (e.g. \`college_placement_system\` or \`<production-db-name>\`).
+
+7. **G. Import \`database/schema.sql\`**:
+   - From your local terminal or a CI/CD bastion machine, run the schema import command:
+     \`\`\`bash
+     mysql -h <production-db-host> -P 3306 -u <production-db-user> -p <production-db-name> < database/schema.sql
+     \`\`\`
+   - *(Alternatively, open MySQL Workbench or DBeaver connected to the cloud instance, open \`database/schema.sql\`, and execute all statements).*
+
+8. **H. Verify the Tables**:
+   - Connect to the production database and confirm all 8 relational tables were created successfully:
+     \`\`\`sql
+     SHOW TABLES;
+     \`\`\`
+   - Verified expected tables:
+     1. \`users\` (Authentication credentials and role ENUM)
+     2. \`students\` (Student academic profiles, roll numbers, CGPA, backlogs)
+     3. \`admins\` (Placement cell officers)
+     4. \`companies\` (Corporate recruitment partners)
+     5. \`jobs\` (Active campus placement drives and eligibility criteria)
+     6. \`skills\` (Master list of normalized technical competencies)
+     7. \`student_skills\` (Student technical skills junction table)
+     8. \`applications\` (Job application records and status pipeline)
+
+9. **I. Configure Backend Environment Variables**:
+   - In your backend hosting provider dashboard (e.g. Render, Railway, AWS ECS), set the following production environment variables using the credentials obtained above:
+     \`\`\`env
+     DB_HOST=<production-db-host>
+     DB_PORT=3306
+     DB_USER=<production-db-user>
+     DB_PASSWORD=<production-db-password>
+     DB_NAME=<production-db-name>
+     DB_SSL=<production-db-ssl-setting>
+     \`\`\`
+   *(Note: Set \`DB_SSL=true\` if your cloud provider enforces TLS/SSL encrypted connections, as on AWS RDS or DigitalOcean).*
+
+10. **J. Test Database Connectivity**:
+    - Once the backend is started in production, verify connectivity via the live health check endpoint:
+      \`\`\`bash
+      curl https://<your-backend-domain>/api/test/database
+      \`\`\`
+    - Expected HTTP 200 response:
+      \`\`\`json
+      {
+        "success": true,
+        "message": "Database connection successful",
+        "data": [{"connection_test": 1}]
+      }
+      \`\`\`
 
 ---
 
