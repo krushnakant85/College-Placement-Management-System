@@ -233,9 +233,12 @@ All API endpoints exchange structured JSON payloads following consistent format 
 
 Follow these 10 step-by-step instructions to set up, run, and verify the College Placement Management System locally on your workstation.
 
-> 📖 **Quick Links**:
+> 📖 **Project & Interview Quick Links**:
+> - Comprehensive Technical Dossier: **[PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)**
+> - 35 Technical Interview & Viva Voce Q&A: **[INTERVIEW_QUESTIONS.md](INTERVIEW_QUESTIONS.md)**
+> - 5–10 Min Live Demonstration Script: **[DEMO_SCRIPT.md](DEMO_SCRIPT.md)**
+> - Resume & Portfolio Bullet Points: **[RESUME_PROJECT.md](RESUME_PROJECT.md)**
 > - Detailed Troubleshooting & Beginner Setup: **[RUNNING_LOCALLY.md](RUNNING_LOCALLY.md)**
-> - Technical Interview & Demonstration Playbook: **[INTERVIEW_DEMO.md](INTERVIEW_DEMO.md)**
 > - Pre-Configured API Collection: **[Postman Collection](postman/College_Placement_Management_System.postman_collection.json)**
 
 ---
