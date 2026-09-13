@@ -15,33 +15,89 @@
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+  <div class="app-shell">
+    <!-- Top Sticky Header -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <button class="sidebar-toggle-btn" aria-label="Toggle navigation menu" onclick="toggleSidebar()">☰</button>
+        <a href="admin-dashboard.html" class="nav-brand">
+          <span class="nav-brand-icon nav-brand-admin">AP</span>
+          <span>Placement Admin Portal</span>
+        </a>
+      </div>
+      <div class="app-header-right">
+        <button class="header-action-btn" title="Notifications" aria-label="Notifications"><span class="notification-badge-dot"></span>🔔</button>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button>
+        <div class="header-profile-chip">
+          <div class="header-avatar" style="background: linear-gradient(135deg, #4f46e5, #06b6d4);">AP</div>
+          <div class="header-profile-info">
+            <span class="header-profile-name" id="admin-name-badge">Administrator</span>
+            <span class="header-profile-role">T&amp;P Placement Cell</span>
+          </div>
+        </div>
+        <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.25rem;">Logout</button>
+      </div>
+    </header>
 
-  <!-- Navigation Bar -->
-  <nav class="navbar">
-    <div class="container">
-      <a href="admin-dashboard.html" class="nav-brand">
-        <span class="nav-brand-icon nav-brand-admin">AP</span>
-        <span>Placement Admin Portal</span>
-      </a>
-      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
-      <ul class="nav-links">
-        <li><a href="admin-dashboard.html" class="nav-link ">Dashboard</a></li>
-        <li><a href="admin-companies.html" class="nav-link ">Companies</a></li>
-        <li><a href="admin-jobs.html" class="nav-link ">Jobs</a></li>
-        <li><a href="admin-students.html" class="nav-link active">Students</a></li>
-        <li><a href="admin-applications.html" class="nav-link ">Applications</a></li>
-        <li class="nav-user">
-          <span class="user-badge" id="admin-name-badge">Administrator</span>
-          <button onclick="handleAdminLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.5rem;">Logout</button>
-        </li>
-        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
-      </ul>
-    </div>
-  </nav>
+    <!-- App Body (Sidebar + Content) -->
+    <div class="app-body">
+      <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+      <aside class="app-sidebar" aria-label="Admin Navigation">
+        <div class="sidebar-profile-card">
+          <div class="sidebar-avatar" style="background: linear-gradient(135deg, #4f46e5, #06b6d4);">AP</div>
+          <div class="sidebar-profile-details">
+            <div class="sidebar-profile-name" id="sidebar-admin-name">Admin Officer</div>
+            <div class="sidebar-profile-badge">Placement Officer</div>
+          </div>
+        </div>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    <div class="container">
+        <div class="sidebar-group-title">ADMINISTRATION</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="admin-dashboard.html" class="sidebar-link ">
+              <span class="sidebar-icon">📊</span> Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="admin-students.html" class="sidebar-link active">
+              <span class="sidebar-icon">🎓</span> Student Directory
+            </a>
+          </li>
+          <li>
+            <a href="admin-companies.html" class="sidebar-link ">
+              <span class="sidebar-icon">🏢</span> Partner Companies
+            </a>
+          </li>
+          <li>
+            <a href="admin-jobs.html" class="sidebar-link ">
+              <span class="sidebar-icon">💼</span> Campus Job Drives
+            </a>
+          </li>
+          <li>
+            <a href="admin-applications.html" class="sidebar-link ">
+              <span class="sidebar-icon">📝</span> Application Pipeline
+            </a>
+          </li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-group-title">SYSTEM</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="../index.html" class="sidebar-link">
+              <span class="sidebar-icon">🏠</span> Back to Home
+            </a>
+          </li>
+          <li>
+            <button class="sidebar-link" onclick="handleAdminLogout()" style="color: var(--danger);">
+              <span class="sidebar-icon">🚪</span> Sign Out
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main Admin Content Area -->
+      <main class="app-main">
 
       <!-- Header Row -->
       <div class="page-header-row">
@@ -131,8 +187,8 @@
         </div>
       </div>
 
+      </main>
     </div>
-  </main>
 
   <!-- Student Full Profile Modal -->
   <div class="modal-backdrop" id="student-modal">
@@ -250,6 +306,7 @@
       </ul>
     </div>
   </footer>
+  </div><!-- end app-shell -->
 
   <script src="../js/api.js"></script>
   <script src="../js/main.js"></script>

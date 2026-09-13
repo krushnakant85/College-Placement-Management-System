@@ -344,11 +344,11 @@ function escapeHtml(str) {
 }
 
 // ============================================================================
-// Mobile Navigation Toggle
+// Mobile Navigation & Sidebar Toggle
 // ============================================================================
 
 /**
- * Toggle responsive mobile navigation menu
+ * Toggle responsive mobile navigation menu (Public Pages)
  */
 function toggleMobileNav() {
   const navLinks = document.querySelector('.nav-links');
@@ -359,6 +359,50 @@ function toggleMobileNav() {
       toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
   }
+}
+
+/**
+ * Toggle App Shell Left Sidebar Drawer (Authenticated Portal Views)
+ */
+function toggleSidebar() {
+  const sidebar = document.querySelector('.app-sidebar');
+  const backdrop = document.querySelector('.sidebar-backdrop');
+  if (sidebar) {
+    const isOpen = sidebar.classList.toggle('sidebar-open');
+    if (backdrop) {
+      backdrop.classList.toggle('active', isOpen);
+    }
+    const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+  }
+}
+
+/**
+ * Close App Shell Left Sidebar Drawer
+ */
+function closeSidebar() {
+  const sidebar = document.querySelector('.app-sidebar');
+  const backdrop = document.querySelector('.sidebar-backdrop');
+  if (sidebar && sidebar.classList.contains('sidebar-open')) {
+    sidebar.classList.remove('sidebar-open');
+  }
+  if (backdrop && backdrop.classList.contains('active')) {
+    backdrop.classList.remove('active');
+  }
+}
+
+/**
+ * Compute 1-2 character initials for user avatars
+ * @param {string} name
+ * @returns {string}
+ */
+function getUserInitials(name) {
+  if (!name || typeof name !== 'string') return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 // ============================================================================
@@ -373,6 +417,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mobileToggle) {
     mobileToggle.addEventListener('click', toggleMobileNav);
   }
+
+  // Bind sidebar toggle button if present
+  const sidebarToggle = document.querySelector('.sidebar-toggle-btn');
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', toggleSidebar);
+  }
+
+  // Bind sidebar backdrop click to close
+  const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+  }
+
+  // Auto-close sidebar when clicking any navigation link inside sidebar
+  const sidebarLinks = document.querySelectorAll('.app-sidebar .sidebar-item, .app-sidebar .sidebar-link');
+  sidebarLinks.forEach((item) => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 992) {
+        closeSidebar();
+      }
+    });
+  });
 
   // Close mobile nav when clicking any nav link
   const allNavLinks = document.querySelectorAll('.nav-links a');
@@ -411,10 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Highlight active link based on current page URL
   const currentPath = window.location.pathname;
-  const navLinks = document.querySelectorAll('.nav-link');
+  const navLinks = document.querySelectorAll('.nav-link, .sidebar-link');
   navLinks.forEach((link) => {
     const href = link.getAttribute('href');
-    if (href && currentPath.endsWith(href)) {
+    if (href && href !== '#' && !href.startsWith('javascript') && currentPath.endsWith(href)) {
       link.classList.add('active');
     }
   });

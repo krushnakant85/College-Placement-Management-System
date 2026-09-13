@@ -15,30 +15,95 @@
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+  <div class="app-shell">
+    <!-- Top Sticky Header -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <button class="sidebar-toggle-btn" aria-label="Toggle navigation menu" onclick="toggleSidebar()">☰</button>
+        <a href="../index.html" class="nav-brand">
+          <span class="nav-brand-icon">CP</span>
+          <span>College Placement Portal</span>
+        </a>
+      </div>
+      <div class="app-header-right">
+        <button class="header-action-btn" title="Notifications" aria-label="Notifications"><span class="notification-badge-dot"></span>🔔</button>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button>
+        <div class="header-profile-chip">
+          <div class="header-avatar" id="student-avatar-initials">ST</div>
+          <div class="header-profile-info">
+            <span class="header-profile-name" id="student-name-badge">Student</span>
+            <span class="header-profile-role">Candidate Portal</span>
+          </div>
+        </div>
+        <button onclick="handleLogout()" class="btn btn-sm btn-outline-primary" style="margin-left: 0.25rem;">Logout</button>
+      </div>
+    </header>
 
-  <!-- Navigation Bar -->
-  <nav class="navbar">
-    <div class="container">
-      <a href="../index.html" class="nav-brand">
-        <span class="nav-brand-icon">CP</span>
-        <span>College Placement Portal</span>
-      </a>
-      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileNav()">☰</button>
-      <ul class="nav-links">
-        <li><a href="../index.html" class="nav-link">Home</a></li>
-        <li><a href="javascript:void(0)" onclick="switchTab('overview')" class="nav-link active" id="nav-overview">Portal</a></li>
-        <li class="nav-user">
-          <span class="user-badge" id="student-name-badge">Student</span>
-          <button onclick="handleLogout()" class="btn btn-sm btn-outline-primary">Logout</button>
-        </li>
-        <li><button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button></li>
-      </ul>
-    </div>
-  </nav>
+    <!-- App Body (Sidebar + Main Content) -->
+    <div class="app-body">
+      <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+      <aside class="app-sidebar" aria-label="Student Navigation">
+        <div class="sidebar-profile-card">
+          <div class="sidebar-avatar" id="sidebar-avatar-initials">ST</div>
+          <div class="sidebar-profile-details">
+            <div class="sidebar-profile-name" id="sidebar-student-name">Student Candidate</div>
+            <div class="sidebar-profile-badge" id="sidebar-student-roll">Roll: Loading...</div>
+          </div>
+        </div>
 
-  <!-- Main Dashboard Content -->
-  <main class="main-content">
-    <div class="container">
+        <div class="sidebar-group-title">MAIN NAVIGATION</div>
+        <ul class="sidebar-nav">
+          <li>
+            <button class="sidebar-item active" id="sidebar-tab-overview" onclick="switchTab('overview')">
+              <span class="sidebar-icon">📊</span> <span id="nav-overview">Overview</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item" id="sidebar-tab-jobs" onclick="switchTab('jobs')">
+              <span class="sidebar-icon">💼</span> Available Jobs
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item" id="sidebar-tab-eligibility" onclick="switchTab('jobs')">
+              <span class="sidebar-icon">✓</span> Eligibility Check
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item" id="sidebar-tab-applications" onclick="switchTab('applications')">
+              <span class="sidebar-icon">📝</span> My Applications
+              <span id="sidebar-app-count-badge" class="badge badge-primary sidebar-badge" style="display: none;">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item" id="sidebar-tab-profile" onclick="switchTab('profile')">
+              <span class="sidebar-icon">👤</span> My Profile
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item" id="sidebar-tab-skills" onclick="switchTab('skills')">
+              <span class="sidebar-icon">💡</span> Technical Skills
+            </button>
+          </li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-group-title">ACCOUNT</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="../index.html" class="sidebar-item">
+              <span class="sidebar-icon">🏠</span> Back to Home
+            </a>
+          </li>
+          <li>
+            <button class="sidebar-item" onclick="handleLogout()" style="color: var(--danger);">
+              <span class="sidebar-icon">🚪</span> Sign Out
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main Dashboard Content Area -->
+      <main class="app-main">
 
       <!-- Dynamic Global Alert Container -->
       <div id="alert-container"></div>
@@ -315,8 +380,8 @@
         </div>
       </div>
 
+      </main>
     </div>
-  </main>
 
   <!-- ==================================================================== -->
   <!-- MODAL 1: EDIT PROFILE -->
@@ -443,6 +508,7 @@
       </ul>
     </div>
   </footer>
+  </div><!-- end app-shell -->
 
   <script src="../js/api.js"></script>
   <script src="../js/main.js"></script>
@@ -481,10 +547,14 @@
       if (!tabs.includes(tabId)) tabId = "overview";
       tabs.forEach((t) => {
         const btn = document.getElementById("tab-btn-" + t);
+        const sidebarBtn = document.getElementById("sidebar-tab-" + t);
         const panel = document.getElementById("panel-" + t);
         if (btn) btn.classList.toggle("active", t === tabId);
+        if (sidebarBtn) sidebarBtn.classList.toggle("active", t === tabId);
         if (panel) panel.classList.toggle("active", t === tabId);
       });
+      const eligBtn = document.getElementById("sidebar-tab-eligibility");
+      if (eligBtn) eligBtn.classList.remove("active");
       history.replaceState(null, "", "#" + tabId);
     }
 
@@ -514,6 +584,16 @@
       document.getElementById("stat-branch").textContent = currentStudent.branch || "--";
       document.getElementById("stat-backlogs").textContent = currentStudent.backlogs !== undefined ? currentStudent.backlogs : "0";
       document.getElementById("stat-year").textContent = currentStudent.graduation_year || "--";
+
+      const initials = typeof getUserInitials === 'function' ? getUserInitials(name) : 'ST';
+      const topAvatar = document.getElementById("student-avatar-initials");
+      if (topAvatar) topAvatar.textContent = initials;
+      const sidebarAvatar = document.getElementById("sidebar-avatar-initials");
+      if (sidebarAvatar) sidebarAvatar.textContent = initials;
+      const sidebarName = document.getElementById("sidebar-student-name");
+      if (sidebarName) sidebarName.textContent = name;
+      const sidebarRoll = document.getElementById("sidebar-student-roll");
+      if (sidebarRoll) sidebarRoll.textContent = "Roll: " + (currentStudent.student_id || "N/A");
 
       document.getElementById("prof-name").textContent = currentStudent.name || "--";
       document.getElementById("prof-email").textContent = currentStudent.email || "--";
