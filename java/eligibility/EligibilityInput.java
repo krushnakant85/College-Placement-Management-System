@@ -14,14 +14,20 @@ public class EligibilityInput {
         private double cgpa;
         private int backlogs;
         private String branch;
+        private int graduationYear;
         private List<String> skills = new ArrayList<>();
 
         public StudentData() {}
 
         public StudentData(double cgpa, int backlogs, String branch, List<String> skills) {
+            this(cgpa, backlogs, branch, 0, skills);
+        }
+
+        public StudentData(double cgpa, int backlogs, String branch, int graduationYear, List<String> skills) {
             this.cgpa = cgpa;
             this.backlogs = backlogs;
             this.branch = branch;
+            this.graduationYear = graduationYear;
             if (skills != null) {
                 this.skills = skills;
             }
@@ -36,6 +42,9 @@ public class EligibilityInput {
         public String getBranch() { return branch; }
         public void setBranch(String branch) { this.branch = branch; }
 
+        public int getGraduationYear() { return graduationYear; }
+        public void setGraduationYear(int graduationYear) { this.graduationYear = graduationYear; }
+
         public List<String> getSkills() { return skills; }
         public void setSkills(List<String> skills) {
             this.skills = skills != null ? skills : new ArrayList<>();
@@ -46,14 +55,20 @@ public class EligibilityInput {
         private double minimumCgpa;
         private int maximumBacklogs;
         private String eligibleBranch;
+        private int graduationYear;
         private List<String> requiredSkills = new ArrayList<>();
 
         public JobData() {}
 
         public JobData(double minimumCgpa, int maximumBacklogs, String eligibleBranch, List<String> requiredSkills) {
+            this(minimumCgpa, maximumBacklogs, eligibleBranch, 0, requiredSkills);
+        }
+
+        public JobData(double minimumCgpa, int maximumBacklogs, String eligibleBranch, int graduationYear, List<String> requiredSkills) {
             this.minimumCgpa = minimumCgpa;
             this.maximumBacklogs = maximumBacklogs;
             this.eligibleBranch = eligibleBranch;
+            this.graduationYear = graduationYear;
             if (requiredSkills != null) {
                 this.requiredSkills = requiredSkills;
             }
@@ -67,6 +82,9 @@ public class EligibilityInput {
 
         public String getEligibleBranch() { return eligibleBranch; }
         public void setEligibleBranch(String eligibleBranch) { this.eligibleBranch = eligibleBranch; }
+
+        public int getGraduationYear() { return graduationYear; }
+        public void setGraduationYear(int graduationYear) { this.graduationYear = graduationYear; }
 
         public List<String> getRequiredSkills() { return requiredSkills; }
         public void setRequiredSkills(List<String> requiredSkills) {

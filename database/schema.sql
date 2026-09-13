@@ -11,6 +11,7 @@ USE college_placement_system;
 -- Drop tables if they exist (in reverse dependency order to avoid Foreign Key errors)
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS student_skills;
+DROP TABLE IF EXISTS job_skills;
 DROP TABLE IF EXISTS skills;
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS companies;
@@ -91,6 +92,7 @@ CREATE TABLE jobs (
     job_description TEXT NOT NULL,
     minimum_cgpa DECIMAL(4, 2) NOT NULL DEFAULT 0.00 CHECK (minimum_cgpa >= 0.00 AND minimum_cgpa <= 10.00),
     eligible_branch VARCHAR(100) NOT NULL,
+    graduation_year INT NULL DEFAULT NULL,
     maximum_backlogs INT NOT NULL DEFAULT 0 CHECK (maximum_backlogs >= 0),
     package DECIMAL(10, 2) NOT NULL COMMENT 'Annual CTC package in INR (e.g. 1200000.00)',
     job_location VARCHAR(150) NOT NULL,
@@ -118,6 +120,19 @@ CREATE TABLE student_skills (
     PRIMARY KEY (student_id, skill_id),
     CONSTRAINT fk_student_skills_students FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_student_skills_skills FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+
+-- ----------------------------------------------------------------------------
+-- Table: job_skills
+-- Junction/Join table establishing Many-to-Many relationship between jobs & required skills.
+-- ----------------------------------------------------------------------------
+CREATE TABLE job_skills (
+    job_id INT NOT NULL,
+    skill_id INT NOT NULL,
+    PRIMARY KEY (job_id, skill_id),
+    CONSTRAINT fk_job_skills_jobs FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_job_skills_skills FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- ----------------------------------------------------------------------------

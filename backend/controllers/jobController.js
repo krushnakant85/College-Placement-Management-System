@@ -5,9 +5,119 @@ const pool = require('../config/database');
  * Route: GET /api/jobs, GET /api/admin/jobs
  * Access: Public / Admin
  */
+/**
+ * Helper to resolve skill IDs from various input formats:
+ * - array of integers: [1, 2, 3]
+ * - array of strings/names: ["Java", "SQL"]
+ * - comma-separated string: "Java, SQL" or "1, 2, 3"
+ * - array of objects: [{ id: 1 }, { skill_name: "Java" }]
+ */
+async function resolveSkillIds(connectionOrPool, rawSkills) {
+  if (!rawSkills) return [];
+
+  let candidates = [];
+  if (Array.isArray(rawSkills)) {
+    candidates = rawSkills;
+  } else if (typeof rawSkills === 'string') {
+    candidates = rawSkills.split(',').map((s) => s.trim()).filter(Boolean);
+  } else if (typeof rawSkills === 'object') {
+    candidates = [rawSkills];
+  }
+
+  if (candidates.length === 0) return [];
+
+  const [allSkills] = await connectionOrPool.query('SELECT id, skill_name FROM skills');
+  const skillById = new Map();
+  const skillByName = new Map();
+  for (const s of allSkills) {
+    skillById.set(s.id, s);
+    skillByName.set(s.skill_name.trim().toLowerCase(), s);
+  }
+
+  const resolvedIds = new Set();
+  for (const item of candidates) {
+    if (item === null || item === undefined) continue;
+
+    if (typeof item === 'number' && skillById.has(item)) {
+      resolvedIds.add(item);
+      continue;
+    }
+
+    if (typeof item === 'string' && /^\d+$/.test(item.trim())) {
+      const id = parseInt(item.trim(), 10);
+      if (skillById.has(id)) {
+        resolvedIds.add(id);
+        continue;
+      }
+    }
+
+    if (typeof item === 'object') {
+      const objId = item.id || item.skill_id;
+      if (objId && skillById.has(parseInt(objId, 10))) {
+        resolvedIds.add(parseInt(objId, 10));
+        continue;
+      }
+      const objName = item.skill_name || item.name;
+      if (objName && typeof objName === 'string') {
+        const match = skillByName.get(objName.trim().toLowerCase());
+        if (match) {
+          resolvedIds.add(match.id);
+          continue;
+        }
+      }
+    }
+
+    if (typeof item === 'string') {
+      const cleanName = item.trim();
+      const match = skillByName.get(cleanName.toLowerCase());
+      if (match) {
+        resolvedIds.add(match.id);
+      } else if (cleanName.length > 0) {
+        try {
+          const [ins] = await connectionOrPool.query('INSERT INTO skills (skill_name) VALUES (?)', [cleanName]);
+          resolvedIds.add(ins.insertId);
+          skillByName.set(cleanName.toLowerCase(), { id: ins.insertId, skill_name: cleanName });
+          skillById.set(ins.insertId, { id: ins.insertId, skill_name: cleanName });
+        } catch (e) {
+          const [retry] = await connectionOrPool.query('SELECT id FROM skills WHERE skill_name = ?', [cleanName]);
+          if (retry.length > 0) resolvedIds.add(retry[0].id);
+        }
+      }
+    }
+  }
+
+  return Array.from(resolvedIds);
+}
+
+/**
+ * Controller: Get All Master Skills
+ * Route: GET /api/skills, GET /api/jobs/skills, GET /api/admin/skills
+ */
+const getAllSkills = async (req, res, next) => {
+  try {
+    const [skills] = await pool.query('SELECT id, skill_name FROM skills ORDER BY skill_name ASC');
+    return res.status(200).json({
+      success: true,
+      data: {
+        skills,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching skills:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve skills.',
+    });
+  }
+};
+
+/**
+ * Controller: Get All Jobs (with Company details and required skills joined)
+ * Route: GET /api/jobs, GET /api/admin/jobs
+ * Access: Public / Admin
+ */
 const getAllJobs = async (req, res, next) => {
   try {
-    // Perform an INNER JOIN with companies to include recruiting company details
     const query = `
       SELECT 
         j.id,
@@ -17,6 +127,7 @@ const getAllJobs = async (req, res, next) => {
         j.job_description,
         j.minimum_cgpa,
         j.eligible_branch,
+        j.graduation_year,
         j.maximum_backlogs,
         j.package,
         j.job_location,
@@ -29,7 +140,25 @@ const getAllJobs = async (req, res, next) => {
 
     const [jobs] = await pool.query(query);
 
-    // Format numbers where helpful (e.g. minimum_cgpa and package as floats/numbers)
+    // Fetch required skills for all jobs in a single efficient query
+    const [skillRows] = await pool.query(`
+      SELECT js.job_id, s.id AS skill_id, s.skill_name
+      FROM job_skills js
+      JOIN skills s ON js.skill_id = s.id
+      ORDER BY s.skill_name ASC
+    `);
+
+    const skillsByJob = {};
+    for (const row of skillRows) {
+      if (!skillsByJob[row.job_id]) {
+        skillsByJob[row.job_id] = [];
+      }
+      skillsByJob[row.job_id].push({
+        id: row.skill_id,
+        skill_name: row.skill_name,
+      });
+    }
+
     const formattedJobs = jobs.map((job) => ({
       id: job.id,
       company_id: job.company_id,
@@ -38,11 +167,14 @@ const getAllJobs = async (req, res, next) => {
       job_description: job.job_description,
       minimum_cgpa: parseFloat(job.minimum_cgpa),
       eligible_branch: job.eligible_branch,
+      graduation_year: job.graduation_year ? parseInt(job.graduation_year, 10) : null,
       maximum_backlogs: job.maximum_backlogs,
       package: parseFloat(job.package),
       job_location: job.job_location,
       application_deadline: job.application_deadline,
       created_at: job.created_at,
+      required_skills: skillsByJob[job.id] || [],
+      requiredSkills: (skillsByJob[job.id] || []).map((s) => s.skill_name),
     }));
 
     return res.status(200).json({
@@ -61,7 +193,7 @@ const getAllJobs = async (req, res, next) => {
 };
 
 /**
- * Controller: Get Single Job by ID (with Company details joined)
+ * Controller: Get Single Job by ID (with Company details and required skills joined)
  * Route: GET /api/jobs/:jobId, GET /api/admin/jobs/:jobId
  * Access: Public / Admin
  */
@@ -69,7 +201,6 @@ const getJobById = async (req, res, next) => {
   try {
     const { jobId } = req.params;
 
-    // Validate that jobId is a strictly positive integer
     const parsedJobId = parseInt(jobId, 10);
     if (isNaN(parsedJobId) || parsedJobId <= 0 || String(parsedJobId) !== jobId.trim()) {
       return res.status(400).json({
@@ -78,7 +209,6 @@ const getJobById = async (req, res, next) => {
       });
     }
 
-    // Parameterized query using placeholder ? with JOIN to companies
     const query = `
       SELECT 
         j.id,
@@ -90,6 +220,7 @@ const getJobById = async (req, res, next) => {
         j.job_description,
         j.minimum_cgpa,
         j.eligible_branch,
+        j.graduation_year,
         j.maximum_backlogs,
         j.package,
         j.job_location,
@@ -102,7 +233,6 @@ const getJobById = async (req, res, next) => {
 
     const [rows] = await pool.query(query, [parsedJobId]);
 
-    // If no job found with this ID
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -111,6 +241,14 @@ const getJobById = async (req, res, next) => {
     }
 
     const job = rows[0];
+
+    const [skillRows] = await pool.query(`
+      SELECT s.id, s.skill_name
+      FROM job_skills js
+      JOIN skills s ON js.skill_id = s.id
+      WHERE js.job_id = ?
+      ORDER BY s.skill_name ASC
+    `, [parsedJobId]);
 
     return res.status(200).json({
       success: true,
@@ -125,11 +263,14 @@ const getJobById = async (req, res, next) => {
           job_description: job.job_description,
           minimum_cgpa: parseFloat(job.minimum_cgpa),
           eligible_branch: job.eligible_branch,
+          graduation_year: job.graduation_year ? parseInt(job.graduation_year, 10) : null,
           maximum_backlogs: job.maximum_backlogs,
           package: parseFloat(job.package),
           job_location: job.job_location,
           application_deadline: job.application_deadline,
           created_at: job.created_at,
+          required_skills: skillRows,
+          requiredSkills: skillRows.map((s) => s.skill_name),
         },
       },
     });
@@ -148,6 +289,7 @@ const getJobById = async (req, res, next) => {
  * Access: Admin
  */
 const createJob = async (req, res, next) => {
+  let connection;
   try {
     const {
       company_id,
@@ -160,6 +302,9 @@ const createJob = async (req, res, next) => {
       eligible_branch,
       branch,
       eligible_branches,
+      graduation_year,
+      graduationYear,
+      batch,
       maximum_backlogs,
       backlogs,
       package: salaryPackage,
@@ -168,6 +313,9 @@ const createJob = async (req, res, next) => {
       location,
       application_deadline,
       deadline,
+      required_skills,
+      requiredSkills,
+      skills,
     } = req.body;
 
     // 1. Normalize values
@@ -275,7 +423,20 @@ const createJob = async (req, res, next) => {
       });
     }
 
-    // 8. Verify that referenced Company exists
+    // 8. Validate graduation year (optional, nullable)
+    let parsedGraduationYear = null;
+    const candidateGradYear = graduation_year !== undefined ? graduation_year : (graduationYear !== undefined ? graduationYear : batch);
+    if (candidateGradYear !== undefined && candidateGradYear !== null && candidateGradYear !== '') {
+      parsedGraduationYear = parseInt(candidateGradYear, 10);
+      if (isNaN(parsedGraduationYear) || parsedGraduationYear < 1900 || parsedGraduationYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation Error: Graduation year must be a valid 4-digit year (e.g. 2025).',
+        });
+      }
+    }
+
+    // 9. Verify that referenced Company exists
     const [companies] = await pool.query('SELECT id, company_name FROM companies WHERE id = ?', [parsedCompanyId]);
     if (companies.length === 0) {
       return res.status(404).json({
@@ -284,7 +445,15 @@ const createJob = async (req, res, next) => {
       });
     }
 
-    // 9. Insert Job record using parameterized SQL
+    // 10. Process skills input
+    const rawSkillsInput = required_skills !== undefined ? required_skills : (requiredSkills !== undefined ? requiredSkills : skills);
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const skillIds = await resolveSkillIds(connection, rawSkillsInput);
+
+    // 11. Insert Job record
     const insertQuery = `
       INSERT INTO jobs (
         company_id,
@@ -292,50 +461,74 @@ const createJob = async (req, res, next) => {
         job_description,
         minimum_cgpa,
         eligible_branch,
+        graduation_year,
         maximum_backlogs,
         package,
         job_location,
         application_deadline
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const [insertResult] = await pool.query(insertQuery, [
+    const [insertResult] = await connection.query(insertQuery, [
       parsedCompanyId,
       finalJobTitle,
       finalDescription,
       parsedMinCgpa,
       finalEligibleBranch,
+      parsedGraduationYear,
       parsedMaxBacklogs,
       parsedPackage,
       finalJobLocation,
       finalDeadline,
     ]);
 
+    const newJobId = insertResult.insertId;
+
+    // 12. Insert into job_skills junction table
+    if (skillIds.length > 0) {
+      const skillValues = skillIds.map((sid) => [newJobId, sid]);
+      await connection.query('INSERT INTO job_skills (job_id, skill_id) VALUES ?', [skillValues]);
+    }
+
+    // Fetch saved skills
+    const [savedSkills] = await connection.query(
+      `SELECT s.id, s.skill_name FROM job_skills js JOIN skills s ON js.skill_id = s.id WHERE js.job_id = ? ORDER BY s.skill_name ASC`,
+      [newJobId]
+    );
+
+    await connection.commit();
+
     return res.status(201).json({
       success: true,
       message: 'Job created successfully',
       data: {
         job: {
-          id: insertResult.insertId,
+          id: newJobId,
           company_id: parsedCompanyId,
           company_name: companies[0].company_name,
           job_title: finalJobTitle,
           job_description: finalDescription,
           minimum_cgpa: parsedMinCgpa,
           eligible_branch: finalEligibleBranch,
+          graduation_year: parsedGraduationYear,
           maximum_backlogs: parsedMaxBacklogs,
           package: parsedPackage,
           job_location: finalJobLocation,
           application_deadline: finalDeadline,
+          required_skills: savedSkills,
+          requiredSkills: savedSkills.map((s) => s.skill_name),
         },
       },
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error('Error creating job:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to create job posting.',
     });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
@@ -345,10 +538,10 @@ const createJob = async (req, res, next) => {
  * Access: Admin
  */
 const updateJob = async (req, res, next) => {
+  let connection;
   try {
     const { jobId } = req.params;
 
-    // Validate jobId parameter
     const parsedJobId = parseInt(jobId, 10);
     if (isNaN(parsedJobId) || parsedJobId <= 0 || String(parsedJobId) !== jobId.trim()) {
       return res.status(400).json({
@@ -357,7 +550,6 @@ const updateJob = async (req, res, next) => {
       });
     }
 
-    // Check if job exists
     const [existingJobRows] = await pool.query('SELECT * FROM jobs WHERE id = ?', [parsedJobId]);
     if (existingJobRows.length === 0) {
       return res.status(404).json({
@@ -378,6 +570,9 @@ const updateJob = async (req, res, next) => {
       eligible_branch,
       branch,
       eligible_branches,
+      graduation_year,
+      graduationYear,
+      batch,
       maximum_backlogs,
       backlogs,
       package: salaryPackage,
@@ -386,9 +581,11 @@ const updateJob = async (req, res, next) => {
       location,
       application_deadline,
       deadline,
+      required_skills,
+      requiredSkills,
+      skills,
     } = req.body;
 
-    // Ensure update payload is not completely empty
     const providedKeys = Object.keys(req.body);
     if (providedKeys.length === 0) {
       return res.status(400).json({
@@ -397,7 +594,6 @@ const updateJob = async (req, res, next) => {
       });
     }
 
-    // Validate and update company_id if provided
     let finalCompanyId = currentJob.company_id;
     if (company_id !== undefined) {
       const parsedNewCompanyId = parseInt(company_id, 10);
@@ -417,10 +613,9 @@ const updateJob = async (req, res, next) => {
       finalCompanyId = parsedNewCompanyId;
     }
 
-    // Validate strings
     let finalJobTitle = currentJob.job_title;
     if (job_title !== undefined || title !== undefined) {
-      const val = (job_title !== undefined ? job_title : title);
+      const val = job_title !== undefined ? job_title : title;
       if (typeof val !== 'string' || val.trim() === '') {
         return res.status(400).json({
           success: false,
@@ -432,7 +627,7 @@ const updateJob = async (req, res, next) => {
 
     let finalDescription = currentJob.job_description;
     if (job_description !== undefined || description !== undefined) {
-      const val = (job_description !== undefined ? job_description : description);
+      const val = job_description !== undefined ? job_description : description;
       if (typeof val !== 'string' || val.trim() === '') {
         return res.status(400).json({
           success: false,
@@ -444,7 +639,7 @@ const updateJob = async (req, res, next) => {
 
     let finalEligibleBranch = currentJob.eligible_branch;
     if (eligible_branch !== undefined || branch !== undefined || eligible_branches !== undefined) {
-      const val = (eligible_branch !== undefined ? eligible_branch : (branch !== undefined ? branch : eligible_branches));
+      const val = eligible_branch !== undefined ? eligible_branch : (branch !== undefined ? branch : eligible_branches);
       if (typeof val !== 'string' || val.trim() === '') {
         return res.status(400).json({
           success: false,
@@ -456,7 +651,7 @@ const updateJob = async (req, res, next) => {
 
     let finalJobLocation = currentJob.job_location;
     if (job_location !== undefined || location !== undefined) {
-      const val = (job_location !== undefined ? job_location : location);
+      const val = job_location !== undefined ? job_location : location;
       if (typeof val !== 'string' || val.trim() === '') {
         return res.status(400).json({
           success: false,
@@ -466,10 +661,9 @@ const updateJob = async (req, res, next) => {
       finalJobLocation = val.trim();
     }
 
-    // Validate deadline
     let finalDeadline = currentJob.application_deadline;
     if (application_deadline !== undefined || deadline !== undefined) {
-      const val = (application_deadline !== undefined ? application_deadline : deadline);
+      const val = application_deadline !== undefined ? application_deadline : deadline;
       if (typeof val !== 'string' || isNaN(Date.parse(val.trim()))) {
         return res.status(400).json({
           success: false,
@@ -479,10 +673,9 @@ const updateJob = async (req, res, next) => {
       finalDeadline = val.trim();
     }
 
-    // Validate numerics
     let finalMinCgpa = parseFloat(currentJob.minimum_cgpa);
     if (minimum_cgpa !== undefined || cgpa !== undefined) {
-      const val = (minimum_cgpa !== undefined ? minimum_cgpa : cgpa);
+      const val = minimum_cgpa !== undefined ? minimum_cgpa : cgpa;
       const parsed = parseFloat(val);
       if (isNaN(parsed) || parsed < 0.00 || parsed > 10.00) {
         return res.status(400).json({
@@ -495,7 +688,7 @@ const updateJob = async (req, res, next) => {
 
     let finalMaxBacklogs = currentJob.maximum_backlogs;
     if (maximum_backlogs !== undefined || backlogs !== undefined) {
-      const val = (maximum_backlogs !== undefined ? maximum_backlogs : backlogs);
+      const val = maximum_backlogs !== undefined ? maximum_backlogs : backlogs;
       const parsed = parseInt(val, 10);
       if (isNaN(parsed) || parsed < 0) {
         return res.status(400).json({
@@ -506,9 +699,26 @@ const updateJob = async (req, res, next) => {
       finalMaxBacklogs = parsed;
     }
 
+    let finalGraduationYear = currentJob.graduation_year ? parseInt(currentJob.graduation_year, 10) : null;
+    const candidateGradYear = graduation_year !== undefined ? graduation_year : (graduationYear !== undefined ? graduationYear : batch);
+    if (candidateGradYear !== undefined) {
+      if (candidateGradYear === null || candidateGradYear === '' || candidateGradYear === 0 || candidateGradYear === '0') {
+        finalGraduationYear = null;
+      } else {
+        const parsed = parseInt(candidateGradYear, 10);
+        if (isNaN(parsed) || parsed < 1900 || parsed > 2100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Validation Error: Graduation year must be a valid 4-digit year (e.g. 2025).',
+          });
+        }
+        finalGraduationYear = parsed;
+      }
+    }
+
     let finalPackage = parseFloat(currentJob.package);
     if (salaryPackage !== undefined || salary !== undefined) {
-      const val = (salaryPackage !== undefined ? salaryPackage : salary);
+      const val = salaryPackage !== undefined ? salaryPackage : salary;
       const parsed = parseFloat(val);
       if (isNaN(parsed) || parsed <= 0) {
         return res.status(400).json({
@@ -519,7 +729,12 @@ const updateJob = async (req, res, next) => {
       finalPackage = parsed;
     }
 
-    // Execute parameterized update
+    const hasSkillsUpdate = required_skills !== undefined || requiredSkills !== undefined || skills !== undefined;
+    const rawSkillsInput = required_skills !== undefined ? required_skills : (requiredSkills !== undefined ? requiredSkills : skills);
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     const updateQuery = `
       UPDATE jobs 
       SET 
@@ -528,6 +743,7 @@ const updateJob = async (req, res, next) => {
         job_description = ?,
         minimum_cgpa = ?,
         eligible_branch = ?,
+        graduation_year = ?,
         maximum_backlogs = ?,
         package = ?,
         job_location = ?,
@@ -535,12 +751,13 @@ const updateJob = async (req, res, next) => {
       WHERE id = ?
     `;
 
-    await pool.query(updateQuery, [
+    await connection.query(updateQuery, [
       finalCompanyId,
       finalJobTitle,
       finalDescription,
       finalMinCgpa,
       finalEligibleBranch,
+      finalGraduationYear,
       finalMaxBacklogs,
       finalPackage,
       finalJobLocation,
@@ -548,8 +765,16 @@ const updateJob = async (req, res, next) => {
       parsedJobId,
     ]);
 
-    // Fetch updated job joined with company details
-    const [updatedRows] = await pool.query(
+    if (hasSkillsUpdate) {
+      const skillIds = await resolveSkillIds(connection, rawSkillsInput);
+      await connection.query('DELETE FROM job_skills WHERE job_id = ?', [parsedJobId]);
+      if (skillIds.length > 0) {
+        const skillValues = skillIds.map((sid) => [parsedJobId, sid]);
+        await connection.query('INSERT INTO job_skills (job_id, skill_id) VALUES ?', [skillValues]);
+      }
+    }
+
+    const [updatedRows] = await connection.query(
       `
       SELECT 
         j.id,
@@ -559,6 +784,7 @@ const updateJob = async (req, res, next) => {
         j.job_description,
         j.minimum_cgpa,
         j.eligible_branch,
+        j.graduation_year,
         j.maximum_backlogs,
         j.package,
         j.job_location,
@@ -573,6 +799,13 @@ const updateJob = async (req, res, next) => {
 
     const updatedJob = updatedRows[0];
 
+    const [skillRows] = await connection.query(
+      `SELECT s.id, s.skill_name FROM job_skills js JOIN skills s ON js.skill_id = s.id WHERE js.job_id = ? ORDER BY s.skill_name ASC`,
+      [parsedJobId]
+    );
+
+    await connection.commit();
+
     return res.status(200).json({
       success: true,
       message: 'Job updated successfully',
@@ -585,20 +818,26 @@ const updateJob = async (req, res, next) => {
           job_description: updatedJob.job_description,
           minimum_cgpa: parseFloat(updatedJob.minimum_cgpa),
           eligible_branch: updatedJob.eligible_branch,
+          graduation_year: updatedJob.graduation_year ? parseInt(updatedJob.graduation_year, 10) : null,
           maximum_backlogs: updatedJob.maximum_backlogs,
           package: parseFloat(updatedJob.package),
           job_location: updatedJob.job_location,
           application_deadline: updatedJob.application_deadline,
           created_at: updatedJob.created_at,
+          required_skills: skillRows,
+          requiredSkills: skillRows.map((s) => s.skill_name),
         },
       },
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error(`Error updating job ${req.params.jobId}:`, error);
     return res.status(500).json({
       success: false,
       message: 'Failed to update job.',
     });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
@@ -665,5 +904,6 @@ module.exports = {
   createJob,
   updateJob,
   deleteJob,
+  getAllSkills,
 };
 

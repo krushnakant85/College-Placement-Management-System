@@ -64,17 +64,19 @@ public class Main {
             double cgpa = SimpleJsonParser.getDouble(studentMap, 0.0, "cgpa", "student_cgpa");
             int backlogs = SimpleJsonParser.getInt(studentMap, 0, "backlogs", "student_backlogs");
             String branch = SimpleJsonParser.getString(studentMap, "", "branch", "student_branch");
+            int studentGradYear = SimpleJsonParser.getInt(studentMap, 0, "graduationYear", "graduation_year", "passing_year", "batch");
             List<String> skills = SimpleJsonParser.getStringList(studentMap, "skills", "student_skills", "skillNames");
 
-            EligibilityInput.StudentData studentData = new EligibilityInput.StudentData(cgpa, backlogs, branch, skills);
+            EligibilityInput.StudentData studentData = new EligibilityInput.StudentData(cgpa, backlogs, branch, studentGradYear, skills);
 
             // 4. Extract Job Data (supporting both camelCase and snake_case)
             double minCgpa = SimpleJsonParser.getDouble(jobMap, 0.0, "minimumCgpa", "minimum_cgpa", "min_cgpa", "cgpa");
             int maxBacklogs = SimpleJsonParser.getInt(jobMap, 0, "maximumBacklogs", "maximum_backlogs", "max_backlogs", "backlogs");
             String eligibleBranch = SimpleJsonParser.getString(jobMap, "", "eligibleBranch", "eligible_branch", "branch");
+            int jobGradYear = SimpleJsonParser.getInt(jobMap, 0, "graduationYear", "graduation_year", "batch", "passing_year");
             List<String> requiredSkills = SimpleJsonParser.getStringList(jobMap, "requiredSkills", "required_skills", "skills");
 
-            EligibilityInput.JobData jobData = new EligibilityInput.JobData(minCgpa, maxBacklogs, eligibleBranch, requiredSkills);
+            EligibilityInput.JobData jobData = new EligibilityInput.JobData(minCgpa, maxBacklogs, eligibleBranch, jobGradYear, requiredSkills);
 
             // 5. Evaluate Eligibility
             EligibilityInput input = new EligibilityInput(studentData, jobData);

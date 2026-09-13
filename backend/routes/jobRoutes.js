@@ -9,6 +9,7 @@ const eligibilityController = require('../controllers/eligibilityController');
  * @access  Public
  */
 router.get('/', jobController.getAllJobs);
+router.get('/skills', jobController.getAllSkills);
 
 /**
  * @route   GET /api/jobs/:jobId

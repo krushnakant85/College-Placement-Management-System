@@ -148,7 +148,8 @@
                   <th style="width: 50px;">ID</th>
                   <th>Company</th>
                   <th>Job Title</th>
-                  <th>Branch</th>
+                  <th>Branch &amp; Batch</th>
+                  <th>Required Skills</th>
                   <th>Min CGPA</th>
                   <th>Max Backlogs</th>
                   <th>Package (CTC)</th>
@@ -208,12 +209,20 @@
             </div>
           </div>
 
-          <div class="form-row-3">
+          <div class="form-row">
             <div class="form-group">
               <label for="job-branch-input" class="form-label">Eligible Branch <span class="required">*</span></label>
               <input type="text" id="job-branch-input" class="form-control" placeholder="e.g. CSBS,CSE,IT" required>
               <div class="form-hint">Comma-separated or 'All'</div>
             </div>
+            <div class="form-group">
+              <label for="job-year-input" class="form-label">Target Graduation Year</label>
+              <input type="number" id="job-year-input" class="form-control" placeholder="e.g. 2026 (Blank = All)" min="2020" max="2035" step="1">
+              <div class="form-hint">Blank = Open to all graduation years</div>
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label for="job-cgpa-input" class="form-label">Min CGPA <span class="required">*</span></label>
               <input type="number" id="job-cgpa-input" class="form-control" placeholder="e.g. 7.50" min="0" max="10" step="0.01" required>
@@ -222,6 +231,14 @@
               <label for="job-backlogs-input" class="form-label">Max Backlogs <span class="required">*</span></label>
               <input type="number" id="job-backlogs-input" class="form-control" placeholder="e.g. 0" min="0" step="1" required>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Required Technical Skills</label>
+            <div id="job-skills-selection-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 130px; overflow-y: auto; padding: 0.65rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: var(--radius-md, 8px); background: var(--bg-surface, #f8fafc);">
+              <!-- Populated dynamically via loadMasterSkills -->
+            </div>
+            <div class="form-hint">Students must possess ALL selected technical skills to be eligible.</div>
           </div>
 
           <div class="form-group">
@@ -258,6 +275,8 @@
           <h4>Eligibility Criteria</h4>
           <ul class="job-details-list">
             <li class="job-details-item"><span class="job-details-label">Eligible Branch:</span><span class="job-details-val" id="view-job-branch"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Target Batch / Year:</span><span class="job-details-val" id="view-job-year"></span></li>
+            <li class="job-details-item"><span class="job-details-label">Required Skills:</span><span class="job-details-val" id="view-job-skills"></span></li>
             <li class="job-details-item"><span class="job-details-label">Minimum CGPA:</span><span class="job-details-val" id="view-job-cgpa"></span></li>
             <li class="job-details-item"><span class="job-details-label">Max Backlogs:</span><span class="job-details-val" id="view-job-backlogs"></span></li>
             <li class="job-details-item"><span class="job-details-label">Location:</span><span class="job-details-val" id="view-job-loc"></span></li>
@@ -313,13 +332,39 @@
 
     let allJobs = [];
     let companyList = [];
+    let masterSkillsList = [];
     let jobToDeleteId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadCompaniesDropdown();
+      await loadMasterSkills();
       await fetchJobs();
       setupJobSearch();
     });
+
+    async function loadMasterSkills() {
+      try {
+        const response = await window.api.jobAPI.getAllSkills();
+        if (response.success && response.data && Array.isArray(response.data.skills)) {
+          masterSkillsList = response.data.skills;
+          renderSkillsCheckboxes([]);
+        }
+      } catch (err) {
+        console.error('Failed to load master skills:', err);
+      }
+    }
+
+    function renderSkillsCheckboxes(selectedSkillIds = []) {
+      const container = document.getElementById('job-skills-selection-container');
+      if (!container) return;
+      const selectedSet = new Set((selectedSkillIds || []).map(id => String(id)));
+      container.innerHTML = masterSkillsList.map(s => `
+        <label style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; background: var(--card-bg, #fff); padding: 0.25rem 0.55rem; border: 1px solid var(--border-color, #cbd5e1); border-radius: 9999px; cursor: pointer; user-select: none;">
+          <input type="checkbox" name="required_skill_cb" value="${s.id}" ${selectedSet.has(String(s.id)) ? 'checked' : ''} style="cursor: pointer;">
+          <span>${escapeHtml(s.skill_name)}</span>
+        </label>
+      `).join('');
+    }
 
     async function loadCompaniesDropdown() {
       try {
@@ -375,12 +420,22 @@
       tableContainer.style.display = 'block';
 
       tbody.innerHTML = jobs.map(j => {
+        const skillsBadgeHtml = (j.required_skills && j.required_skills.length > 0)
+          ? j.required_skills.map(s => `<span class="badge badge-outline" style="font-size: 0.72rem; margin: 1px;">${escapeHtml(s.skill_name)}</span>`).join(' ')
+          : '<span class="form-hint" style="font-size: 0.78rem;">None</span>';
+
         return `
           <tr id="job-row-${j.id}">
             <td><strong>#${j.id}</strong></td>
             <td><strong style="color: var(--text-dark);">${escapeHtml(j.company_name)}</strong></td>
             <td>${escapeHtml(j.job_title)}</td>
-            <td><span class="badge badge-primary">${escapeHtml(j.eligible_branch || 'All')}</span></td>
+            <td>
+              <span class="badge badge-primary">${escapeHtml(j.eligible_branch || 'All')}</span><br>
+              <small style="color: var(--text-muted); font-size: 0.75rem; font-weight: 500;">
+                ${j.graduation_year ? ('Batch ' + j.graduation_year) : 'All Batches'}
+              </small>
+            </td>
+            <td style="max-width: 160px;">${skillsBadgeHtml}</td>
             <td>${parseFloat(j.minimum_cgpa).toFixed(2)}</td>
             <td>${j.maximum_backlogs}</td>
             <td><strong>${formatPackage(j.package)}</strong></td>
@@ -414,7 +469,8 @@
           const comp = (j.company_name || '').toLowerCase();
           const loc = (j.job_location || '').toLowerCase();
           const branch = (j.eligible_branch || '').toLowerCase();
-          return title.includes(query) || comp.includes(query) || loc.includes(query) || branch.includes(query);
+          const skills = (j.requiredSkills || []).join(' ').toLowerCase();
+          return title.includes(query) || comp.includes(query) || loc.includes(query) || branch.includes(query) || skills.includes(query);
         });
 
         renderJobs(filtered);
@@ -433,9 +489,11 @@
       document.getElementById('job-package-input').value = '';
       document.getElementById('job-location-input').value = '';
       document.getElementById('job-branch-input').value = 'CSBS,CSE,IT';
+      document.getElementById('job-year-input').value = '';
       document.getElementById('job-cgpa-input').value = '7.00';
       document.getElementById('job-backlogs-input').value = '0';
       document.getElementById('job-deadline-input').value = '';
+      renderSkillsCheckboxes([]);
       document.getElementById('job-modal').classList.add('open');
     }
 
@@ -447,14 +505,21 @@
       document.getElementById('job-modal-title').textContent = 'Edit Job Opening';
       document.getElementById('modal-job-id').value = job.id;
       document.getElementById('job-company-select').value = job.company_id || '';
-      document.getElementById('job-company-select').disabled = true; // company is usually fixed
+      document.getElementById('job-company-select').disabled = true;
       document.getElementById('job-title-input').value = job.job_title || '';
       document.getElementById('job-desc-input').value = job.job_description || '';
       document.getElementById('job-package-input').value = job.package || '';
       document.getElementById('job-location-input').value = job.job_location || '';
       document.getElementById('job-branch-input').value = job.eligible_branch || '';
+      document.getElementById('job-year-input').value = job.graduation_year || '';
       document.getElementById('job-cgpa-input').value = job.minimum_cgpa !== undefined ? job.minimum_cgpa : '';
       document.getElementById('job-backlogs-input').value = job.maximum_backlogs !== undefined ? job.maximum_backlogs : '';
+
+      const activeSkillIds = (j => {
+        if (!j.required_skills) return [];
+        return j.required_skills.map(s => s.id);
+      })(job);
+      renderSkillsCheckboxes(activeSkillIds);
       
       if (job.application_deadline) {
         const d = new Date(job.application_deadline);
@@ -481,9 +546,14 @@
       const packageVal = parseFloat(document.getElementById('job-package-input').value);
       const job_location = document.getElementById('job-location-input').value.trim();
       const eligible_branch = document.getElementById('job-branch-input').value.trim();
+      const gradYearVal = document.getElementById('job-year-input').value.trim();
+      const graduation_year = gradYearVal ? parseInt(gradYearVal, 10) : null;
       const minimum_cgpa = parseFloat(document.getElementById('job-cgpa-input').value);
       const maximum_backlogs = parseInt(document.getElementById('job-backlogs-input').value, 10);
       const application_deadline = document.getElementById('job-deadline-input').value;
+
+      const checkedSkillNodes = document.querySelectorAll('input[name="required_skill_cb"]:checked');
+      const required_skills = Array.from(checkedSkillNodes).map(cb => parseInt(cb.value, 10));
 
       if (!id && !company_id) {
         showAlert('job-modal-alert', 'Please select a hiring company.', 'danger');
@@ -509,6 +579,10 @@
         showAlert('job-modal-alert', 'Eligible branch is required.', 'danger');
         return;
       }
+      if (graduation_year !== null && (isNaN(graduation_year) || graduation_year < 1900 || graduation_year > 2100)) {
+        showAlert('job-modal-alert', 'Graduation year must be a valid 4-digit year (e.g. 2026).', 'danger');
+        return;
+      }
       if (isNaN(minimum_cgpa) || minimum_cgpa < 0 || minimum_cgpa > 10) {
         showAlert('job-modal-alert', 'Minimum CGPA must be between 0.00 and 10.00.', 'danger');
         return;
@@ -528,9 +602,11 @@
         package: packageVal,
         job_location,
         eligible_branch,
+        graduation_year,
         minimum_cgpa,
         maximum_backlogs,
-        application_deadline
+        application_deadline,
+        required_skills
       };
 
       if (!id) {
@@ -571,6 +647,10 @@
       document.getElementById('view-job-package').textContent = formatPackage(job.package);
       document.getElementById('view-job-desc').textContent = job.job_description;
       document.getElementById('view-job-branch').textContent = job.eligible_branch || 'All Branches';
+      document.getElementById('view-job-year').textContent = job.graduation_year ? ('Batch ' + job.graduation_year) : 'All Batches (Open)';
+      document.getElementById('view-job-skills').innerHTML = (job.required_skills && job.required_skills.length > 0)
+        ? job.required_skills.map(s => `<span class="badge badge-primary" style="margin-right: 4px;">${escapeHtml(s.skill_name)}</span>`).join('')
+        : '<span class="form-hint">None (All students eligible)</span>';
       document.getElementById('view-job-cgpa').textContent = parseFloat(job.minimum_cgpa).toFixed(2);
       document.getElementById('view-job-backlogs').textContent = job.maximum_backlogs;
       document.getElementById('view-job-loc').textContent = job.job_location;

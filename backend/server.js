@@ -9,6 +9,7 @@ const companyRoutes = require('./routes/companyRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const skillRoutes = require('./routes/skillRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -52,6 +53,7 @@ app.use('/api/job', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/application', applicationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/skills', skillRoutes);
 
 // Root Health/Welcome Route
 app.get('/', (req, res) => {

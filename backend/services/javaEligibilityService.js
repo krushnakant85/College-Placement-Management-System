@@ -56,7 +56,23 @@ function evaluateFallback(job, student, studentSkills = []) {
     );
   }
 
-  // 4. Skills Check (if job has required skills)
+  // 4. Graduation Year Check (if job specifies graduation_year > 0)
+  const jobGradYear = parseInt(job.graduation_year !== undefined ? job.graduation_year : job.graduationYear || 0, 10);
+  const studentGradYear = parseInt(student.graduation_year !== undefined ? student.graduation_year : student.graduationYear || 0, 10);
+
+  if (jobGradYear > 0) {
+    if (studentGradYear === jobGradYear) {
+      reasons.push(
+        `Graduation year requirement satisfied (Eligible Batch: ${jobGradYear}, Student Batch: ${studentGradYear})`
+      );
+    } else {
+      missingRequirements.push(
+        `Eligible graduation year is ${jobGradYear}, but student graduation year is ${studentGradYear || 'unspecified'}.`
+      );
+    }
+  }
+
+  // 5. Skills Check (if job has required skills)
   const reqSkillsRaw = job.requiredSkills || job.required_skills || [];
   const reqSkillsList = Array.isArray(reqSkillsRaw)
     ? reqSkillsRaw
@@ -117,6 +133,7 @@ function evaluateWithJava(job, student, studentSkills = []) {
         cgpa: parseFloat(student.cgpa !== undefined ? student.cgpa : 0),
         backlogs: parseInt(student.backlogs !== undefined ? student.backlogs : 0, 10),
         branch: student.branch || '',
+        graduationYear: parseInt(student.graduation_year !== undefined ? student.graduation_year : student.graduationYear || 0, 10),
         skills: Array.isArray(studentSkills) && studentSkills.length > 0
           ? studentSkills
           : (Array.isArray(student.skills) ? student.skills : [])
@@ -125,6 +142,7 @@ function evaluateWithJava(job, student, studentSkills = []) {
         minimumCgpa: parseFloat(job.minimum_cgpa !== undefined ? job.minimum_cgpa : job.minimumCgpa || 0),
         maximumBacklogs: parseInt(job.maximum_backlogs !== undefined ? job.maximum_backlogs : job.maximumBacklogs || 0, 10),
         eligibleBranch: job.eligible_branch !== undefined ? job.eligible_branch : job.eligibleBranch || 'All',
+        graduationYear: parseInt(job.graduation_year !== undefined ? job.graduation_year : job.graduationYear || 0, 10),
         requiredSkills: Array.isArray(job.requiredSkills)
           ? job.requiredSkills
           : (job.required_skills

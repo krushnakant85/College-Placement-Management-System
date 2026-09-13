@@ -471,6 +471,14 @@
               <span class="job-details-val" id="job-modal-branch"></span>
             </li>
             <li class="job-details-item">
+              <span class="job-details-label">Eligible Batch / Year:</span>
+              <span class="job-details-val" id="job-modal-year"></span>
+            </li>
+            <li class="job-details-item">
+              <span class="job-details-label">Required Technical Skills:</span>
+              <span class="job-details-val" id="job-modal-skills"></span>
+            </li>
+            <li class="job-details-item">
               <span class="job-details-label">Minimum CGPA:</span>
               <span class="job-details-val" id="job-modal-cgpa"></span>
             </li>
@@ -799,6 +807,11 @@
           applyBtnHtml = '<button class="btn btn-primary btn-sm btn-block" onclick="handleApplyJob(' + job.id + ')">⚡ Apply Now</button>';
         }
 
+        const batchDisplay = job.graduation_year ? ('Batch ' + job.graduation_year) : 'All Batches';
+        const skillsDisplay = (job.required_skills && job.required_skills.length > 0)
+          ? job.required_skills.map((s) => '<span class="badge badge-outline" style="font-size: 0.72rem; margin: 1px;">' + escapeHtml(s.skill_name) + '</span>').join(' ')
+          : '<span class="form-hint" style="font-size: 0.75rem;">None</span>';
+
         return '<article class="job-card" id="job-card-' + job.id + '">' +
           '<div>' +
             '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">' +
@@ -811,6 +824,8 @@
             '<ul class="job-details-list">' +
               '<li class="job-details-item"><span class="job-details-label">Location:</span><span class="job-details-val">' + escapeHtml(job.job_location || "Not Specified") + '</span></li>' +
               '<li class="job-details-item"><span class="job-details-label">Eligible Branch:</span><span class="job-details-val">' + escapeHtml(branchDisplay) + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Target Batch:</span><span class="job-details-val">' + escapeHtml(batchDisplay) + '</span></li>' +
+              '<li class="job-details-item"><span class="job-details-label">Required Skills:</span><span class="job-details-val">' + skillsDisplay + '</span></li>' +
               '<li class="job-details-item"><span class="job-details-label">Minimum CGPA:</span><span class="job-details-val">' + minCgpa + '</span></li>' +
               '<li class="job-details-item"><span class="job-details-label">Max Backlogs:</span><span class="job-details-val">' + maxBacklogs + '</span></li>' +
               '<li class="job-details-item"><span class="job-details-label">Deadline:</span><span class="job-details-val">' + deadline + '</span></li>' +
@@ -841,7 +856,8 @@
           const comp = (j.company_name || "").toLowerCase();
           const loc = (j.job_location || "").toLowerCase();
           const branch = (j.eligible_branch || "").toLowerCase();
-          return title.includes(term) || comp.includes(term) || loc.includes(term) || branch.includes(term);
+          const skills = (j.requiredSkills || []).join(' ').toLowerCase();
+          return title.includes(term) || comp.includes(term) || loc.includes(term) || branch.includes(term) || skills.includes(term);
         });
         renderJobs(filtered);
       });
@@ -860,6 +876,10 @@
       document.getElementById("job-modal-desc").textContent = job.job_description || "No detailed description provided.";
       document.getElementById("job-modal-loc").textContent = job.job_location || "Not Specified";
       document.getElementById("job-modal-branch").textContent = job.eligible_branch || "All Branches";
+      document.getElementById("job-modal-year").textContent = job.graduation_year ? ("Batch " + job.graduation_year) : "Open to All Batches";
+      document.getElementById("job-modal-skills").innerHTML = (job.required_skills && job.required_skills.length > 0)
+        ? job.required_skills.map((s) => '<span class="badge badge-primary" style="margin-right: 4px;">' + escapeHtml(s.skill_name) + '</span>').join('')
+        : '<span class="form-hint">None (All candidates eligible)</span>';
       document.getElementById("job-modal-cgpa").textContent = job.minimum_cgpa !== undefined ? parseFloat(job.minimum_cgpa).toFixed(2) : "N/A";
       document.getElementById("job-modal-backlogs").textContent = job.maximum_backlogs !== undefined ? job.maximum_backlogs : "N/A";
       document.getElementById("job-modal-deadline").textContent = formatDate(job.application_deadline);

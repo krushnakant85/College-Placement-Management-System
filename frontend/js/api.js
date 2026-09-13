@@ -191,6 +191,16 @@ const jobAPI = {
       method: 'GET',
     });
   },
+
+  /**
+   * Get all available skills
+   * GET /api/skills
+   */
+  getAllSkills() {
+    return apiRequest('/skills', {
+      method: 'GET',
+    });
+  },
 };
 
 /**

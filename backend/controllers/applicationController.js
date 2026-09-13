@@ -78,6 +78,7 @@ const applyForJob = async (req, res, next) => {
         j.job_title,
         j.minimum_cgpa,
         j.eligible_branch,
+        j.graduation_year,
         j.maximum_backlogs,
         j.package,
         j.job_location,
@@ -97,6 +98,13 @@ const applyForJob = async (req, res, next) => {
     }
 
     const job = jobRows[0];
+
+    // Fetch required skills for this job
+    const [jobSkillRows] = await pool.query(
+      `SELECT sk.skill_name FROM skills sk JOIN job_skills js ON sk.id = js.skill_id WHERE js.job_id = ? ORDER BY sk.skill_name ASC`,
+      [parsedJobId]
+    );
+    job.requiredSkills = jobSkillRows.map((s) => s.skill_name);
 
     // ==========================================
     // STEP 4: REUSE JAVA ELIGIBILITY CHECK

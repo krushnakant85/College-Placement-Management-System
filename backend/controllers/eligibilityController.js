@@ -53,6 +53,7 @@ const checkJobEligibility = async (req, res, next) => {
         j.job_title,
         j.minimum_cgpa,
         j.eligible_branch,
+        j.graduation_year,
         j.maximum_backlogs,
         j.package,
         j.job_location,
@@ -72,6 +73,13 @@ const checkJobEligibility = async (req, res, next) => {
     }
 
     const job = jobRows[0];
+
+    // Fetch required skills for this job
+    const [jobSkillRows] = await pool.query(
+      `SELECT sk.skill_name FROM skills sk JOIN job_skills js ON sk.id = js.skill_id WHERE js.job_id = ? ORDER BY sk.skill_name ASC`,
+      [parsedJobId]
+    );
+    job.requiredSkills = jobSkillRows.map((s) => s.skill_name);
 
     // ==========================================
     // 3. RETRIEVE STUDENT PROFILE
@@ -132,6 +140,9 @@ const checkJobEligibility = async (req, res, next) => {
         student_name: student.name,
         job_title: job.job_title,
         company_name: job.company_name,
+        graduation_year: job.graduation_year,
+        student_graduation_year: student.graduation_year,
+        required_skills: job.requiredSkills,
         reasons: eligibilityResult.reasons || [],
         missing_requirements: eligibilityResult.missingRequirements || [],
         student_skills: studentSkillNames,

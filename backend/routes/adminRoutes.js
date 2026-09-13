@@ -85,6 +85,7 @@ router.delete('/companies/:companyId', companyController.deleteCompany);
  * @access  Admin
  */
 router.post('/jobs', jobController.createJob);
+router.get('/skills', jobController.getAllSkills);
 
 /**
  * @route   GET /api/admin/jobs

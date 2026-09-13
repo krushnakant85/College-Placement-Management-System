@@ -101,7 +101,26 @@ public class EligibilityEngine {
         }
 
         // --------------------------------------------------------------------
-        // 4. Required Technical Skills Check (case-insensitive & trimmed)
+        // 4. Graduation Year Check (if specified)
+        // --------------------------------------------------------------------
+        int jobGradYear = job.getGraduationYear();
+        if (jobGradYear > 0) {
+            int studentGradYear = student.getGraduationYear();
+            if (studentGradYear == jobGradYear) {
+                result.addReason(String.format(
+                    "Graduation year requirement satisfied (Eligible Batch: %d, Student Batch: %d)",
+                    jobGradYear, studentGradYear
+                ));
+            } else {
+                result.addMissingRequirement(String.format(
+                    "Eligible graduation year is %d, but student graduation year is %d.",
+                    jobGradYear, studentGradYear
+                ));
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // 5. Required Technical Skills Check (case-insensitive & trimmed)
         // --------------------------------------------------------------------
         List<String> requiredSkills = job.getRequiredSkills();
         if (requiredSkills != null && !requiredSkills.isEmpty()) {
