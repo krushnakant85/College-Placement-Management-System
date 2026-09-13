@@ -216,22 +216,20 @@ Perform these health checks immediately following deployment:
 
 ---
 
-## 📋 Production Deployment Checklist
+## 📋 Final Production Deployment Checklist
 
-- [ ] Create production MySQL database
-- [ ] Import database schema
-- [ ] Configure environment variables
-- [ ] Configure backend host/port
-- [ ] Configure frontend API URL
-- [ ] Configure CORS
-- [ ] Configure Java runtime
-- [ ] Deploy backend
-- [ ] Deploy frontend
-- [ ] Test authentication
-- [ ] Test student workflow
-- [ ] Test admin workflow
-- [ ] Test Java eligibility
-- [ ] Verify HTTPS
-- [ ] Verify secrets are protected
-- [ ] Verify production logs/errors
-- [ ] Perform final smoke test
+The following items must be verified during and immediately following public deployment:
+
+- [ ] Frontend deployed
+- [ ] Backend deployed
+- [ ] MySQL configured
+- [ ] Java engine configured
+- [ ] Production API URL configured
+- [ ] CORS configured
+- [ ] Environment variables configured
+- [ ] Health endpoint verified
+- [ ] Student flow verified
+- [ ] Admin flow verified
+- [ ] Java eligibility verified
+- [ ] HTTPS configured
+- [ ] GitHub repository clean
