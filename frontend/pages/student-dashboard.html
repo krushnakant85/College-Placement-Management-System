@@ -314,13 +314,24 @@
               Explore recruiting companies, evaluate your eligibility, and submit applications
             </p>
           </div>
-          <div>
+          <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
             <input
               type="text"
               id="job-search"
               class="form-control search-input"
-              placeholder="Search by company, role, or branch..."
+              placeholder="Search by company, role, skills..."
+              style="min-width: 220px;"
             >
+            <select id="job-branch-filter" class="form-select" style="min-width: 150px;">
+              <option value="">All Branches</option>
+              <option value="CSBS">CSBS</option>
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="MECH">MECH</option>
+              <option value="CIVIL">CIVIL</option>
+            </select>
           </div>
         </div>
         <div id="jobs-loading" class="loading-container">
@@ -810,31 +821,36 @@
         const batchDisplay = job.graduation_year ? ('Batch ' + job.graduation_year) : 'All Batches';
         const skillsDisplay = (job.required_skills && job.required_skills.length > 0)
           ? job.required_skills.map((s) => '<span class="badge badge-outline" style="font-size: 0.72rem; margin: 1px;">' + escapeHtml(s.skill_name) + '</span>').join(' ')
-          : '<span class="form-hint" style="font-size: 0.75rem;">None</span>';
+          : '<span class="form-hint" style="font-size: 0.75rem;">None (Open)</span>';
 
         return '<article class="job-card" id="job-card-' + job.id + '">' +
           '<div>' +
-            '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">' +
-              '<span class="job-company">' + escapeHtml(job.company_name || "Hiring Company") + '</span>' +
+            '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.25rem;">' +
+              '<span class="job-company">' + escapeHtml(job.company_name || "Hiring Partner") + '</span>' +
               statusBadge +
             '</div>' +
             '<h3 class="job-title">' + escapeHtml(job.job_title) + '</h3>' +
-            '<div class="job-package-tag">' + packageDisplay + '</div>' +
+            '<div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem;">' +
+              '<div class="job-package-tag" style="margin-bottom: 0;">' + packageDisplay + '</div>' +
+              '<span class="badge badge-outline" style="font-size: 0.78rem;">📍 ' + escapeHtml(job.job_location || "Campus/Remote") + '</span>' +
+            '</div>' +
             '<p class="job-description">' + escapeHtml(job.job_description || "No detailed description provided.") + '</p>' +
-            '<ul class="job-details-list">' +
-              '<li class="job-details-item"><span class="job-details-label">Location:</span><span class="job-details-val">' + escapeHtml(job.job_location || "Not Specified") + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Eligible Branch:</span><span class="job-details-val">' + escapeHtml(branchDisplay) + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Target Batch:</span><span class="job-details-val">' + escapeHtml(batchDisplay) + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Required Skills:</span><span class="job-details-val">' + skillsDisplay + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Minimum CGPA:</span><span class="job-details-val">' + minCgpa + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Max Backlogs:</span><span class="job-details-val">' + maxBacklogs + '</span></li>' +
-              '<li class="job-details-item"><span class="job-details-label">Deadline:</span><span class="job-details-val">' + deadline + '</span></li>' +
-            '</ul>' +
+            '<div class="job-criteria-box">' +
+              '<div class="job-criteria-header"><span>⚖️</span> Eligibility Criteria</div>' +
+              '<div class="job-criteria-grid">' +
+                '<div class="job-criteria-item"><span class="job-criteria-k">Min CGPA:</span><span class="job-criteria-v">' + minCgpa + '+</span></div>' +
+                '<div class="job-criteria-item"><span class="job-criteria-k">Max Backlogs:</span><span class="job-criteria-v">' + maxBacklogs + '</span></div>' +
+                '<div class="job-criteria-item" style="grid-column: span 2;"><span class="job-criteria-k">Eligible Branches:</span><span class="job-criteria-v">' + escapeHtml(branchDisplay) + '</span></div>' +
+                '<div class="job-criteria-item"><span class="job-criteria-k">Graduation Batch:</span><span class="job-criteria-v">' + escapeHtml(batchDisplay) + '</span></div>' +
+                '<div class="job-criteria-item"><span class="job-criteria-k">Deadline:</span><span class="job-criteria-v">' + deadline + '</span></div>' +
+                '<div class="job-criteria-item" style="grid-column: span 2;"><span class="job-criteria-k">Required Skills:</span><div style="margin-top: 2px;">' + skillsDisplay + '</div></div>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
-          '<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">' +
+          '<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">' +
             '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">' +
               '<button class="btn btn-outline btn-sm" onclick="openJobDetailsModal(' + job.id + ')">Details</button>' +
-              '<button class="btn btn-outline-primary btn-sm" onclick="quickCheckEligibility(' + job.id + ')">Eligibility</button>' +
+              '<button class="btn btn-outline-primary btn-sm" onclick="quickCheckEligibility(' + job.id + ')">Check Eligibility</button>' +
             '</div>' +
             applyBtnHtml +
           '</div>' +
@@ -844,23 +860,35 @@
 
     function setupSearch() {
       const searchInput = document.getElementById("job-search");
-      if (!searchInput) return;
-      searchInput.addEventListener("input", (e) => {
-        const term = e.target.value.toLowerCase().trim();
-        if (!term) {
+      const branchFilter = document.getElementById("job-branch-filter");
+
+      function applyFilters() {
+        const term = (searchInput ? searchInput.value : "").toLowerCase().trim();
+        const selectedBranch = (branchFilter ? branchFilter.value : "").toLowerCase().trim();
+
+        if (!term && !selectedBranch) {
           renderJobs(allJobs);
           return;
         }
+
         const filtered = allJobs.filter((j) => {
           const title = (j.job_title || "").toLowerCase();
           const comp = (j.company_name || "").toLowerCase();
           const loc = (j.job_location || "").toLowerCase();
           const branch = (j.eligible_branch || "").toLowerCase();
-          const skills = (j.requiredSkills || []).join(' ').toLowerCase();
-          return title.includes(term) || comp.includes(term) || loc.includes(term) || branch.includes(term) || skills.includes(term);
+          const skillsStr = (j.required_skills ? j.required_skills.map(s => s.skill_name).join(' ') : (j.requiredSkills || []).join(' ')).toLowerCase();
+
+          const matchesTerm = !term || title.includes(term) || comp.includes(term) || loc.includes(term) || branch.includes(term) || skillsStr.includes(term);
+          const matchesBranch = !selectedBranch || branch.includes(selectedBranch) || branch.includes('all');
+
+          return matchesTerm && matchesBranch;
         });
+
         renderJobs(filtered);
-      });
+      }
+
+      if (searchInput) searchInput.addEventListener("input", applyFilters);
+      if (branchFilter) branchFilter.addEventListener("change", applyFilters);
     }
 
     function openJobDetailsModal(jobId) {
@@ -944,18 +972,20 @@
       reasons = reasons || [];
       missing = missing || [];
       if (isEligible) {
-        const reasonItems = reasons.map((r) => "<li>" + escapeHtml(r) + "</li>").join("");
+        const reasonItems = reasons.map((r) => "<li style='display: flex; align-items: flex-start; gap: 0.4rem;'><span style='color: var(--success); font-weight: bold;'>✓</span> <span>" + escapeHtml(r) + "</span></li>").join("");
         container.innerHTML = '<div class="eligibility-box eligible">' +
-          '<div class="eligibility-title"><span>🎉</span> You are Eligible to Apply!</div>' +
-          '<p style="font-size: 0.9rem; margin-bottom: 0.35rem;">Your academic profile satisfies all recruiter requirements:</p>' +
-          '<ul class="eligibility-list">' + reasonItems + '</ul>' +
+          '<div class="eligibility-status-tag eligible">✓ ELIGIBLE</div>' +
+          '<div class="eligibility-title">Candidate Meets All Recruiter Requirements</div>' +
+          '<p style="font-size: 0.88rem; margin-bottom: 0.45rem;">Your academic and technical profile satisfies the placement guidelines for this drive:</p>' +
+          '<ul class="eligibility-list" style="list-style: none; margin-left: 0;">' + reasonItems + '</ul>' +
         '</div>';
       } else {
-        const missingItems = missing.map((m) => "<li><strong>" + escapeHtml(m) + "</strong></li>").join("");
+        const missingItems = missing.map((m) => "<li style='display: flex; align-items: flex-start; gap: 0.4rem;'><span style='color: var(--danger); font-weight: bold;'>✕</span> <span><strong>" + escapeHtml(m) + "</strong></span></li>").join("");
         container.innerHTML = '<div class="eligibility-box ineligible">' +
-          '<div class="eligibility-title"><span>⚠️</span> Not Eligible for this Position</div>' +
-          '<p style="font-size: 0.9rem; margin-bottom: 0.35rem;">The following requirement(s) were not met according to placement guidelines:</p>' +
-          '<ul class="eligibility-list">' + missingItems + '</ul>' +
+          '<div class="eligibility-status-tag ineligible">✕ NOT ELIGIBLE</div>' +
+          '<div class="eligibility-title">Candidate Does Not Satisfy Drive Requirements</div>' +
+          '<p style="font-size: 0.88rem; margin-bottom: 0.45rem;">The following requirement(s) were not met according to placement guidelines:</p>' +
+          '<ul class="eligibility-list" style="list-style: none; margin-left: 0;">' + missingItems + '</ul>' +
         '</div>';
       }
     }

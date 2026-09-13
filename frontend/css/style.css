@@ -7,12 +7,12 @@
 /* --- CSS Variables & Dual-Theme System Tokens --- */
 :root,
 html[data-theme="light"] {
-  /* Primary & Accent Palette (Modern Indigo / Purple SaaS) */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
+  /* Primary & Accent Palette (Modern Indigo / Purple College Portal) */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
   --primary-light: #eef2ff;
   --primary-border: #c7d2fe;
-  --primary-glow: rgba(99, 102, 241, 0.18);
+  --primary-glow: rgba(79, 70, 229, 0.16);
   
   --secondary: #64748b;
   --secondary-hover: #475569;
@@ -1003,6 +1003,28 @@ p {
   color: var(--danger-text);
 }
 
+.eligibility-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+}
+
+.eligibility-status-tag.eligible {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.eligibility-status-tag.ineligible {
+  background: #ef4444;
+  color: #ffffff;
+}
+
 .eligibility-title {
   font-weight: 700;
   font-size: 1.05rem;
@@ -1020,6 +1042,90 @@ p {
 
 .eligibility-list li {
   margin-bottom: 0.35rem;
+}
+
+/* Structured Job Criteria Box */
+.job-criteria-box {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.job-criteria-header {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.job-criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.job-criteria-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.job-criteria-k {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.job-criteria-v {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.criteria-form-section {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.15rem;
+  margin: 1.25rem 0;
+}
+
+.criteria-form-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--primary);
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.45rem;
+}
+
+.admin-nav-link {
+  background: var(--primary-light);
+  color: var(--primary) !important;
+  border: 1px solid var(--primary-border);
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--transition);
+}
+
+.admin-nav-link:hover {
+  background: var(--primary);
+  color: #ffffff !important;
 }
 
 /* ==========================================================================
