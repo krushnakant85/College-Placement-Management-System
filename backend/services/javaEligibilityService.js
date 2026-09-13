@@ -1,8 +1,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-// Absolute path to compiled Java classes
-const JAVA_BIN_DIR = path.resolve(__dirname, '../../java/bin');
+// Absolute path to compiled Java classes (configurable via environment variable)
+const JAVA_BIN_DIR = process.env.JAVA_BIN_DIR || path.resolve(__dirname, '../../java/bin');
 const JAVA_TIMEOUT_MS = 5000;
 
 /**

@@ -1,118 +1,237 @@
-# Production Deployment Guide & Checklist
+# Production Deployment Plan & Platform Readiness Guide
 
 > **Deployment Readiness Notice**: Deployment configuration is prepared; production hosting has not yet been configured.
 
-This document outlines the architecture, environment configurations, and step-by-step checklist for deploying the **College Placement Management System** to a production cloud or on-premise infrastructure.
+This guide provides a comprehensive, platform-independent production deployment blueprint for the **College Placement Management System**. It outlines step-by-step procedures for deploying the frontend, Node.js backend, MySQL database, and Java Eligibility Engine across modern hosting platforms.
 
 ---
 
-## 🏛️ Production Architecture Overview
+## 🏛️ Production Architecture
 
-The system follows a decoupled, headless client-server architecture:
+The application follows a decoupled multi-tier architecture:
 
 ```text
-[ Client Browsers / Mobile Devices ]
-                 │
-                 │ HTTPS (Static Asset Delivery)
-                 ▼
-[ Frontend Web Host ]
-  (Static Hosting: Cloudflare Pages / Vercel / Netlify / Nginx / S3)
-                 │
-                 │ REST API (JSON over HTTPS)
-                 ▼
-[ Backend Application Server ]
-  (Node.js / Express Server on Render / AWS EC2 / DigitalOcean)
-       │                                │
-       │ SQL (Connection Pool)          │ Child Process IPC (stdin/stdout)
-       ▼                                ▼
-[ Managed MySQL Database ]     [ Java SE Eligibility Engine ]
-  (AWS RDS / DigitalOcean /      (Compiled Bytecode in java/bin
-   Local Managed MySQL)           with Automatic JS Fallback)
+   Frontend (HTML5 / CSS3 / Vanilla JavaScript)
+      ↓ HTTP / REST (JSON)
+   Node.js + Express backend
+      ↓ Parameterized SQL
+   MySQL database
+
+   Java Eligibility Engine (Standalone OOP Process)
+      ↓ Child Process IPC (stdin / stdout)
+   Backend integration (with zero-downtime JS fallback)
 ```
+
+---
+
+## 📋 Comprehensive Deployment Plan
+
+### A. Frontend Deployment
+The frontend consists of static HTML5, CSS3, and Vanilla JavaScript files located in `frontend/`. It requires no bundler, compiler, or build step.
+
+- **Recommended Platforms**: Cloudflare Pages, Vercel, Netlify, AWS S3 + CloudFront, GitHub Pages, or Nginx.
+- **Deployment Steps**:
+  1. Set the publish/root directory to `frontend/`.
+  2. Configure the production API base URL (see Section G).
+  3. Ensure HTTPS is enabled and enforced with valid TLS/SSL certificates.
+  4. Test that static assets (CSS stylesheets, JS modules, icons) load without 404 errors.
+
+---
+
+### B. Node.js / Express Backend Deployment
+The backend is an Express.js REST API located in `backend/`.
+
+- **Recommended Platforms**: Render (Web Service), Railway, AWS EC2 / ECS / App Runner, DigitalOcean App Platform, or Docker container.
+- **Prerequisites**: Node.js v18+ LTS and OpenJDK 17+.
+- **Build Command**:
+  ```bash
+  cd backend && npm install --omit=dev && cd .. && javac -d java/bin java/eligibility/*.java
+  ```
+- **Production Start Command**:
+  ```bash
+  node backend/server.js
+  # Or with process manager:
+  npm start
+  ```
+- **Health Verification**:
+  - `GET /api/test` (verifies Express API responsiveness)
+  - `GET /api/test/database` (verifies live MySQL connectivity)
+
+---
+
+### C. MySQL Database Deployment
+The system utilizes a relational MySQL 8.0+ database named `college_placement_system`.
+
+- **Recommended Platforms**: AWS RDS (MySQL), DigitalOcean Managed Database, PlanetScale, Aiven, or self-hosted MySQL on a private VPC.
+- **Deployment Steps**:
+  1. Provision a MySQL 8.0+ database instance with UTF8MB4 character encoding.
+  2. Execute the schema migration and initial seed data from `database/schema.sql`:
+     ```bash
+     mysql -h <DATABASE_HOST> -P <DATABASE_PORT> -u <DATABASE_USER> -p <DATABASE_NAME> < database/schema.sql
+     ```
+  3. Verify that all 8 tables are created:
+     - `users`
+     - `students`
+     - `admins`
+     - `companies`
+     - `jobs`
+     - `skills`
+     - `student_skills`
+     - `applications`
+  4. Verify relational integrity constraints, foreign keys, and default seed administrative records.
+
+---
+
+### D. Java Eligibility Engine Deployment
+The eligibility evaluation engine is an independent, pure Java SE object-oriented application located in `java/eligibility/`.
+
+- **Runtime Requirement**: OpenJDK 17+ or Oracle JRE.
+- **Build / Compilation Step**:
+  ```bash
+  javac -d java/bin java/eligibility/*.java
+  ```
+- **Execution Model**: The backend invokes `java -cp java/bin eligibility.Main` via `child_process.spawn`, passing candidate and job data as JSON through `stdin` and reading the evaluation result from `stdout`.
+- **High-Availability Fallback**: If the Java runtime is unavailable on the production host or encounters a timeout (>5000ms), the backend automatically and seamlessly executes an identical pure JavaScript fallback (`evaluateFallback`), guaranteeing 100% service uptime.
+- **Custom Java Path**: If compiled classes reside in a custom location, configure `JAVA_BIN_DIR` in the environment.
+
+---
+
+### E. Environment Variables Reference
+
+The application dynamically reads all environment variables at startup. Never commit real credentials to source control.
+
+Configure the following placeholders in your hosting dashboard or production `.env`:
+
+```env
+# Node Environment & Port
+NODE_ENV=production
+PORT=5000
+
+# Production API Base URL (Frontend Configuration)
+API_BASE_URL=https://api.yourdomain.com/api
+
+# Production Frontend URL for CORS Whitelisting
+CORS_ORIGIN=https://placement.yourdomain.com
+
+# Production Database Credentials (Standard DB_* format)
+DB_HOST=your-db-host.internal
+DB_PORT=3306
+DB_USER=placement_prod_user
+DB_PASSWORD=your_secure_production_password
+DB_NAME=college_placement_system
+DB_SSL=true
+
+# Alternative Standard Cloud Placeholders (Supported by database.js)
+DATABASE_HOST=your-db-host.internal
+DATABASE_PORT=3306
+DATABASE_USER=placement_prod_user
+DATABASE_PASSWORD=your_secure_production_password
+DATABASE_NAME=college_placement_system
+
+# Optional Microservice / Java Custom Path
+JAVA_SERVICE_URL=
+JAVA_BIN_DIR=./java/bin
+```
+
+---
+
+### F. CORS Configuration
+- In development, CORS is open to facilitate testing across local ports.
+- In production, configure `CORS_ORIGIN` with your frontend domain:
+  ```env
+  CORS_ORIGIN=https://placement.yourdomain.com
+  ```
+- To allow multiple origins (e.g., student and admin subdomains), provide a comma-separated list:
+  ```env
+  CORS_ORIGIN=https://placement.college.edu,https://admin.placement.college.edu
+  ```
+
+---
+
+### G. Production API URL Configuration
+The frontend automatically resolves its API base URL using the following cascade in `frontend/js/api.js`:
+
+1. `window.API_BASE_URL` (globally injected variable)
+2. `window.APP_CONFIG.API_BASE_URL` (configuration object)
+3. `window.__API_BASE_URL__` (runtime environment global)
+4. `http://localhost:5000/api` (fallback for standard local development)
+
+**Setting Production API URL**:
+In your frontend HTML or deployment injection script:
+```html
+<script>
+  window.API_BASE_URL = 'https://api.yourdomain.com/api';
+</script>
+```
+If deploying frontend and backend under the same domain or behind a reverse proxy (e.g., Nginx), set:
+```html
+<script>
+  window.API_BASE_URL = '/api';
+</script>
+```
+
+---
+
+### H. Database Connection Configuration
+Database connections are managed using an efficient connection pool (`mysql2/promise`) in `backend/config/database.js`:
+
+- **Connection Limit**: 10 pooled connections with automatic connection reuse and recycling.
+- **SSL Support**: Automatically enabled if `DB_SSL=true` or `DATABASE_SSL=true` is provided (essential for managed cloud providers like AWS RDS and DigitalOcean).
+- **Graceful Error Handling**: Database failures return structured JSON errors without crashing the Express server.
+
+---
+
+### I. Final Health Checks & Verification
+Perform these health checks immediately following deployment:
+
+1. **API Service Check**:
+   ```bash
+   curl -I https://api.yourdomain.com/api/test
+   # Expected: HTTP 200 OK
+   ```
+2. **Database Connectivity Check**:
+   ```bash
+   curl https://api.yourdomain.com/api/test/database
+   # Expected: {"success": true, "message": "Database connection successful", ...}
+   ```
+3. **Public Landing Page**: Navigate to `https://placement.yourdomain.com` in a browser.
+4. **End-to-End Smoke Test**:
+   - Register a new student account.
+   - Login and verify the Student Dashboard.
+   - Test eligibility checking on a campus drive.
+   - Submit an application and confirm it appears in "My Applications".
+   - Login as administrator (`admin.placement@college.edu`) and verify the executive dashboard.
+
+---
+
+### J. Rollback & Basic Troubleshooting
+
+| Symptom | Probable Cause | Corrective Action |
+| :--- | :--- | :--- |
+| **CORS error in browser console** | `CORS_ORIGIN` mismatch | Ensure `CORS_ORIGIN` in backend `.env` matches the exact protocol and domain of the frontend (e.g. `https://...`). |
+| **`ECONNREFUSED` on database** | Incorrect host/port or firewall | Verify `DB_HOST`, `DB_PORT`, and ensure cloud database security group allows inbound traffic from backend IP. |
+| **`ER_ACCESS_DENIED_ERROR`** | Bad database credentials | Double-check `DB_USER` and `DB_PASSWORD` in hosting provider dashboard. |
+| **Java eligibility timeout** | JRE missing or high CPU | Ensure OpenJDK 17+ is installed. Note that the backend will automatically invoke the JavaScript fallback to prevent user errors. |
+| **Frontend displays 404 on API calls** | Misconfigured API base URL | Verify `window.API_BASE_URL` points to the live backend URL with `/api` suffix. |
 
 ---
 
 ## 📋 Production Deployment Checklist
 
-The following checklist tracks required tasks when deploying to a live production environment. All tasks must remain unchecked until production provisioning begins:
-
-- [ ] **1. Production MySQL Database**
-  - [ ] Provision managed MySQL 8.0+ instance (e.g. AWS RDS, DigitalOcean, PlanetScale)
-  - [ ] Secure database with non-default administrative credentials and restricted firewall/VPC access
-  - [ ] Import complete DDL schema from `database/schema.sql`
-  - [ ] Confirm tables created: `users`, `students`, `admins`, `companies`, `jobs`, `skills`, `student_skills`, `applications`
-  - [ ] Verify seed admin account and reference skills exist
-
-- [ ] **2. Backend Server Provisioning**
-  - [ ] Provision Linux environment or container with Node.js v18+ LTS and OpenJDK 17+
-  - [ ] Clone repository: `https://github.com/krushnakant85/College-Placement-Management-System.git`
-  - [ ] Install production dependencies in `backend/`: `npm install --omit=dev`
-  - [ ] Compile Java Eligibility Engine: `javac -d java/bin java/eligibility/*.java`
-  - [ ] Test standalone Java compilation: `java -cp java/bin eligibility.Main`
-
-- [ ] **3. Production Environment Variables Configuration**
-  - [ ] Set `NODE_ENV=production`
-  - [ ] Configure `PORT` (assigned by platform or default `5000`)
-  - [ ] Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-  - [ ] Configure `CORS_ORIGIN` to whitelist the production frontend domain
-  - [ ] Verify `backend/.env` is NOT committed or exposed
-
-- [ ] **4. Process Management & Background Supervision**
-  - [ ] Configure process supervisor (PM2, systemd, or Docker) to ensure automatic restarts:
-    ```bash
-    # Example using PM2:
-    pm2 start backend/server.js --name "placement-backend"
-    ```
-  - [ ] Verify health diagnostic endpoints: `GET /api/test` and `GET /api/test/database`
-
-- [ ] **5. Frontend Deployment**
-  - [ ] Deploy static contents of `frontend/` to CDN or static host (Vercel, Netlify, Cloudflare Pages, S3, or Nginx)
-  - [ ] Set API Base URL by injecting `window.__API_BASE_URL__ = 'https://api.yourdomain.com/api'` or reverse proxying `/api`
-  - [ ] Verify HTML pages load with correct asset paths (CSS, JS)
-  - [ ] Verify theme toggle (Light/Dark) persists across page reloads
-
-- [ ] **6. Security & Infrastructure Hardening**
-  - [ ] Enforce HTTPS / SSL certificates (Let's Encrypt / Cloudflare SSL)
-  - [ ] Verify credentials and secrets are concealed from all client API responses
-  - [ ] Test SQL injection resistance on route parameters
-  - [ ] Verify CORS policy rejects unauthorized cross-origin requests
-
-- [ ] **7. Post-Deployment Smoke Testing**
-  - [ ] Test Student Registration with new candidate account
-  - [ ] Test Student Login and dashboard access
-  - [ ] Test Student Profile updates and skill additions
-  - [ ] Test Job Drives directory listing
-  - [ ] Test Java Eligibility Engine on active drive
-  - [ ] Test Job Application submission and duplicate prevention
-  - [ ] Test Admin Login with production credentials
-  - [ ] Test Admin Dashboard metrics aggregation
-  - [ ] Test Admin Company & Job CRUD controls
-  - [ ] Test Admin Student Directory and search filters
-  - [ ] Test Recruitment Pipeline status updates (`Applied` → `Selected`)
-  - [ ] Inspect production logs for unexpected errors or warnings
-
----
-
-## 🔧 Environment Variables Reference
-
-| Variable | Required | Default (Dev) | Production Example | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `NODE_ENV` | Recommended | `development` | `production` | Optimizes Express performance and error handling. |
-| `PORT` | Optional | `5000` | `5000` or dynamic | Port on which the Express HTTP server listens. |
-| `CORS_ORIGIN` | Optional | `*` (unrestricted) | `https://placement.college.edu` | Comma-separated allowed origins for cross-domain requests. |
-| `DB_HOST` | **Required** | `localhost` | `db.college.internal` | Hostname or IP of the production MySQL server. |
-| `DB_PORT` | Optional | `3306` | `3306` | Port for the MySQL server connection pool. |
-| `DB_USER` | **Required** | `root` | `placement_user` | Production database user with schema permissions. |
-| `DB_PASSWORD` | **Required** | *(empty)* | *(strong secret)* | Password for production database user. |
-| `DB_NAME` | **Required** | `college_placement_system` | `college_placement_system` | Name of the application database. |
-
----
-
-## ☕ Java Eligibility Engine Notes
-
-- **Runtime Requirement**: The Java engine requires an OpenJDK / Oracle JRE (v17 or higher) present on the backend host system.
-- **Compilation**: Must be compiled prior to application startup:
-  ```bash
-  javac -d java/bin java/eligibility/*.java
-  ```
-- **Automated Fallback**: If Java runtime is unavailable or times out (>5000ms), `backend/services/javaEligibilityService.js` automatically executes the identical pure JavaScript evaluation fallback, ensuring 100% uptime.
+- [ ] Create production MySQL database
+- [ ] Import database schema
+- [ ] Configure environment variables
+- [ ] Configure backend host/port
+- [ ] Configure frontend API URL
+- [ ] Configure CORS
+- [ ] Configure Java runtime
+- [ ] Deploy backend
+- [ ] Deploy frontend
+- [ ] Test authentication
+- [ ] Test student workflow
+- [ ] Test admin workflow
+- [ ] Test Java eligibility
+- [ ] Verify HTTPS
+- [ ] Verify secrets are protected
+- [ ] Verify production logs/errors
+- [ ] Perform final smoke test

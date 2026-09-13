@@ -437,7 +437,9 @@ pm2 save
 - **Password Security**: Passwords use bcrypt hashing with 10 salt rounds and are never exposed in API payloads.
 - **CORS Protection**: Access is restricted strictly to designated institution domains.
 
-*For complete step-by-step instructions, see the [Production Deployment Checklist](DEPLOYMENT.md).*
+> [!TIP]
+> **Complete Production Deployment Guide & Checklist**:
+> For the full platform-independent deployment blueprint covering frontend static hosting, backend provisioning, managed MySQL setup, environment variable references, health checks, and troubleshooting, refer to [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
