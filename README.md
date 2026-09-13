@@ -229,19 +229,19 @@ All API endpoints exchange structured JSON payloads following consistent format 
 
 ---
 
-## 💻 Local Setup Instructions
+## 💻 Local Development Setup
 
-Follow these step-by-step instructions to set up and run the project locally on your machine.
+Follow these 10 step-by-step instructions to set up, run, and verify the College Placement Management System locally on your workstation.
 
-### Prerequisites
-- **Git**: [Download Git](https://git-scm.com/)
-- **Node.js** (v18.0.0 or higher): [Download Node.js](https://nodejs.org/)
-- **MySQL Server** (v8.0 or higher): [Download MySQL](https://dev.mysql.com/downloads/installer/)
-- **Java SE Development Kit (JDK)** (v17 or higher): [Download OpenJDK](https://adoptium.net/)
+> 📖 **Quick Links**:
+> - Detailed Troubleshooting & Beginner Setup: **[RUNNING_LOCALLY.md](RUNNING_LOCALLY.md)**
+> - Technical Interview & Demonstration Playbook: **[INTERVIEW_DEMO.md](INTERVIEW_DEMO.md)**
+> - Pre-Configured API Collection: **[Postman Collection](postman/College_Placement_Management_System.postman_collection.json)**
 
 ---
 
-### Step 1: Clone the Repository
+### Step 1: Clone the GitHub Repository
+Clone the repository to your local computer and enter the project folder:
 ```bash
 git clone https://github.com/krushnakant85/College-Placement-Management-System.git
 cd College-Placement-Management-System
@@ -249,8 +249,64 @@ cd College-Placement-Management-System
 
 ---
 
-### Step 2: Install Backend Dependencies
-Navigate to the `backend/` directory and install the required npm packages:
+### Step 2: Install Required Software
+Ensure the following software packages are installed and available in your system path:
+- **Node.js** (v18.0.0 or higher, tested on v24.x): [Download Node.js](https://nodejs.org/)
+- **MySQL Server** (v8.0 or higher): [Download MySQL](https://dev.mysql.com/downloads/mysql/)
+- **Java SE Development Kit (JDK)** (v17 or higher, tested on Java 24): [Download OpenJDK](https://adoptium.net/)
+- **Git**: [Download Git](https://git-scm.com/)
+
+---
+
+### Step 3: Configure MySQL
+Ensure your local MySQL service is active and running:
+- **Windows**: Verify via Services (`services.msc`) that MySQL service is "Running".
+- **macOS / Linux**: `sudo systemctl status mysql` (or `brew services list`).
+
+---
+
+### Step 4: Create / Import the Database using `database/schema.sql`
+Import the complete relational schema and initial seed data:
+```bash
+# Windows PowerShell
+Get-Content database/schema.sql | mysql -u root -p
+
+# Standard MySQL CLI (Linux / macOS / Windows CMD)
+mysql -u root -p < database/schema.sql
+```
+*(When prompted, enter your local MySQL root password).*
+
+This creates the `college_placement_system` database with all 8 tables (`users`, `students`, `admins`, `companies`, `jobs`, `skills`, `student_skills`, `applications`) and seed data.
+
+---
+
+### Step 5: Configure Backend Environment Variables
+Create your local `.env` configuration file from the safe example template:
+```bash
+# Windows PowerShell
+Copy-Item backend/.env.example backend/.env
+
+# Linux / macOS
+cp backend/.env.example backend/.env
+```
+Open `backend/.env` in your text editor and set your local credentials:
+```env
+PORT=5000
+NODE_ENV=development
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_actual_mysql_password
+DB_NAME=college_placement_system
+DB_SSL=false
+```
+*(Note: `backend/.env` is strictly excluded by `.gitignore` and must never be committed to version control).*
+
+---
+
+### Step 6: Install Backend Dependencies
+Navigate to the `backend/` directory and install the required npm dependencies:
 ```bash
 cd backend
 npm install
@@ -259,77 +315,59 @@ cd ..
 
 ---
 
-### Step 3: Configure MySQL Database
-1. Start your local MySQL service.
-2. Open MySQL command-line client, MySQL Workbench, or your preferred SQL tool.
-3. Import the database schema and seed data from `database/schema.sql`:
+### Step 7: Start / Compile the Java Eligibility Engine
+Compile the Java source files into bytecode:
 ```bash
-mysql -u root -p < database/schema.sql
-```
-*Note: This creates the `college_placement_system` database and populates seed data with sample companies, jobs, skills, students, and administrators.*
-
----
-
-### Step 4: Configure Environment Variables
-1. In the `backend/` directory, create a `.env` file from the provided `.env.example`:
-```bash
-# On Linux / macOS
-cp backend/.env.example backend/.env
-
-# On Windows PowerShell
-Copy-Item backend/.env.example backend/.env
-```
-2. Open `backend/.env` in an editor and enter your local MySQL credentials:
-```env
-# Server Configuration
-PORT=5000
-
-# MySQL Database Configuration
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password_here
-DB_NAME=college_placement_system
-```
-*(Never commit the real `.env` file to version control. The `.gitignore` file automatically excludes it).*
-
----
-
-### Step 5: Compile the Java Eligibility Engine
-From the root of the project, compile the Java source files into bytecode:
-```bash
-# On Linux / macOS / Windows
 javac -d java/bin java/eligibility/*.java
 ```
-*To quickly test the Java engine independently:*
+*Quick test to verify standalone Java engine execution:*
 ```bash
-java -cp java/bin eligibility.Main
+# PowerShell / Bash test execution
+echo '{"student":{"cgpa":8.5,"backlogs":0,"branch":"Computer Science","skills":["Java"]},"job":{"minimumCgpa":7.0,"maximumBacklogs":0,"eligibleBranch":"Computer Science","requiredSkills":["Java"]}}' | java -cp java/bin eligibility.Main
+```
+*(The Node.js backend automatically invokes this compiled engine via child process standard I/O, with an internal JavaScript fallback for 100% availability).*
+
+---
+
+### Step 8: Start the Node.js Backend
+Start the Express API server from the project root:
+```bash
+cd backend
+npm start
+```
+*(Alternatively: `node backend/server.js` from the root directory).*
+
+Console confirmation:
+```text
+Server is running on port 5000
+API Test URL: http://localhost:5000/api/test
+Database Test URL: http://localhost:5000/api/test/database
 ```
 
 ---
 
-### Step 6: Start the Backend Server
-From the root directory:
-```bash
-node backend/server.js
-```
-The server will start at `http://localhost:5000`. You can verify:
-- **API Diagnostics**: `http://localhost:5000/api/test`
-- **Database Connectivity**: `http://localhost:5000/api/test/database`
+### Step 9: Open / Run the Frontend
+Because the frontend is engineered in pure HTML5, CSS3, and Vanilla JavaScript, no compilation or bundler is needed:
+1. **Direct Browser**: Open `frontend/index.html` directly in your web browser.
+2. **Local Static Server (Recommended)**:
+   ```bash
+   npx serve frontend
+   ```
+   Navigate to `http://localhost:3000` (or assigned port).
+
+**Portal Navigation**:
+- Landing Page: `frontend/index.html`
+- Student Portal: `frontend/pages/student-login.html`
+- Admin Portal: `frontend/pages/admin-login.html`
 
 ---
 
-### Step 7: Launch the Frontend
-Because the frontend uses pure HTML, CSS, and Vanilla JavaScript, no build process or packaging is needed:
-1. Open `frontend/index.html` directly in any web browser.
-2. Alternatively, serve with VS Code **Live Server** or Python's built-in HTTP server:
-```bash
-# Optional: run local static server from project root
-npx serve frontend
-```
-3. Navigation links:
-   - **Landing Page**: `frontend/index.html`
-   - **Student Portal**: `frontend/pages/student-login.html`
-   - **Admin Portal**: `frontend/pages/admin-login.html`
+### Step 10: Verify the Application
+Confirm that all core system components are operational:
+1. **API Health**: Visit `http://localhost:5000/api/test` (Returns HTTP 200 `{ "success": true }`).
+2. **Database Connection**: Visit `http://localhost:5000/api/test/database` (Returns HTTP 200 with connection test).
+3. **Student Flow**: Log in as student (`arav.sharma@student.edu` / seed password or register a new candidate) -> view profile, add skills, check job eligibility, and apply.
+4. **Admin Flow**: Log in as admin (`admin.placement@college.edu` / seed password) -> view metrics dashboard, manage companies, jobs, student candidates, and transition recruitment status.
 
 ---
 

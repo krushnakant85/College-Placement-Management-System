@@ -1,0 +1,723 @@
+{
+  "info": {
+    "_postman_id": "c8a40c6e-827d-4cb2-8db4-f06b9868f78a",
+    "name": "College Placement Management System API",
+    "description": "Comprehensive Postman API Collection for the College Placement Management System covering Student authentication, profiles, technical skills, Java eligibility evaluation, job applications, Admin portal management, and system health checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Diagnostics",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "test"
+              ]
+            },
+            "description": "Verifies that the Express API server is alive and responding."
+          }
+        },
+        {
+          "name": "Database Connectivity Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/test/database",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "test",
+                "database"
+              ]
+            },
+            "description": "Executes a lightweight query (SELECT 1) to verify live MySQL database connection pool."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Student APIs",
+      "item": [
+        {
+          "name": "1. Student Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rohan Gupta\",\n  \"email\": \"rohan.gupta@student.edu\",\n  \"password\": \"{{student_password}}\",\n  \"student_id\": \"CS2026101\",\n  \"phone\": \"9876543210\",\n  \"branch\": \"Computer Science\",\n  \"cgpa\": 8.75,\n  \"graduation_year\": 2026,\n  \"backlogs\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registers a new student candidate, creating user credentials and academic profile atomically."
+          }
+        },
+        {
+          "name": "2. Student Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates a student using email and password, returning session user details (role: 'student')."
+          }
+        },
+        {
+          "name": "3. Get Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/students/{{student_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{student_user_id}}"
+              ]
+            },
+            "description": "Retrieves the complete academic profile for a candidate by user ID."
+          }
+        },
+        {
+          "name": "4. Update Student Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rohan Gupta\",\n  \"phone\": \"9876543210\",\n  \"branch\": \"Computer Science\",\n  \"cgpa\": 8.9,\n  \"backlogs\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/students/{{student_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{student_user_id}}"
+              ]
+            },
+            "description": "Updates student contact information, department, CGPA, or active backlogs."
+          }
+        },
+        {
+          "name": "5. Get Master Skills List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/students/skills/list",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "skills",
+                "list"
+              ]
+            },
+            "description": "Fetches the full master catalog of normalized technical skills available in the system."
+          }
+        },
+        {
+          "name": "6. Get Student Skills",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/students/{{student_user_id}}/skills",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{student_user_id}}",
+                "skills"
+              ]
+            },
+            "description": "Retrieves verified technical competencies associated with the student profile."
+          }
+        },
+        {
+          "name": "7. Add Skill to Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skill_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/students/{{student_user_id}}/skills",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{student_user_id}}",
+                "skills"
+              ]
+            },
+            "description": "Associates a verified technical skill with the candidate profile."
+          }
+        },
+        {
+          "name": "8. Delete Skill from Student",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/students/{{student_user_id}}/skills/{{skill_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{student_user_id}}",
+                "skills",
+                "{{skill_id}}"
+              ]
+            },
+            "description": "Removes a technical competency from the candidate profile."
+          }
+        },
+        {
+          "name": "9. Browse Placement Drives",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/jobs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "jobs"
+              ]
+            },
+            "description": "Retrieves all active campus placement drives with company and package information."
+          }
+        },
+        {
+          "name": "10. Check Job Eligibility (Java Engine)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/jobs/{{job_id}}/eligibility/{{student_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "{{job_id}}",
+                "eligibility",
+                "{{student_user_id}}"
+              ]
+            },
+            "description": "Evaluates candidate eligibility using the high-performance Java SE Eligibility Engine."
+          }
+        },
+        {
+          "name": "11. Apply for Job Drive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 3,\n  \"job_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "applications"
+              ]
+            },
+            "description": "Submits a campus placement application with duplicate check and eligibility gating."
+          }
+        },
+        {
+          "name": "12. Get Student Application History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/applications/student/{{student_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "applications",
+                "student",
+                "{{student_user_id}}"
+              ]
+            },
+            "description": "Retrieves all campus drive applications submitted by the student and current recruitment status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs",
+      "item": [
+        {
+          "name": "1. Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "Authenticates a placement cell officer with admin role access."
+          }
+        },
+        {
+          "name": "2. Admin Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "stats"
+              ]
+            },
+            "description": "Retrieves real-time counts for students, companies, job drives, and candidate applications."
+          }
+        },
+        {
+          "name": "3. List Student Directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/students?search=&branch=&batch=&minCgpa=&maxBacklogs=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "branch",
+                  "value": ""
+                },
+                {
+                  "key": "batch",
+                  "value": ""
+                },
+                {
+                  "key": "minCgpa",
+                  "value": ""
+                },
+                {
+                  "key": "maxBacklogs",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Retrieves searchable candidate directory with multi-parameter academic filtering."
+          }
+        },
+        {
+          "name": "4. Get Student Details (Admin View)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/students/{{student_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "students",
+                "{{student_user_id}}"
+              ]
+            },
+            "description": "Inspects full candidate profile including verified skills and application history."
+          }
+        },
+        {
+          "name": "5. List Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "description": "Retrieves all corporate recruitment partners."
+          }
+        },
+        {
+          "name": "6. Create Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Apex Technologies Pvt Ltd\",\n  \"location\": \"Bengaluru, India\",\n  \"website\": \"https://apextechnologies.example.com\",\n  \"description\": \"Pioneering cloud data infrastructure and enterprise microservices solutions.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "companies"
+              ]
+            },
+            "description": "Creates a new recruiting company profile."
+          }
+        },
+        {
+          "name": "7. Update Company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Apex Technologies Global\",\n  \"location\": \"Bengaluru / Hyderabad\",\n  \"website\": \"https://apexglobal.example.com\",\n  \"description\": \"Updated company profile description.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/companies/{{company_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "companies",
+                "{{company_id}}"
+              ]
+            },
+            "description": "Updates details for an existing partner company."
+          }
+        },
+        {
+          "name": "8. Delete Company",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/companies/{{company_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "companies",
+                "{{company_id}}"
+              ]
+            },
+            "description": "Deletes a partner company. Blocked with HTTP 409 Conflict if active job postings exist."
+          }
+        },
+        {
+          "name": "9. Create Job Drive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": 1,\n  \"job_title\": \"Junior Software Engineer\",\n  \"job_description\": \"Build scalable backend REST services using Java and Node.js.\",\n  \"minimum_cgpa\": 7,\n  \"eligible_branch\": \"Computer Science, Information Technology\",\n  \"maximum_backlogs\": 0,\n  \"package\": 850000,\n  \"job_location\": \"Bengaluru\",\n  \"application_deadline\": \"2026-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/jobs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "jobs"
+              ]
+            },
+            "description": "Creates a new campus recruitment drive with academic eligibility thresholds."
+          }
+        },
+        {
+          "name": "10. Update Job Drive",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_title\": \"Software Development Engineer I\",\n  \"job_description\": \"Updated description and criteria.\",\n  \"minimum_cgpa\": 7.5,\n  \"eligible_branch\": \"Computer Science, Information Technology, Electronics\",\n  \"maximum_backlogs\": 0,\n  \"package\": 950000,\n  \"job_location\": \"Bengaluru / Remote\",\n  \"application_deadline\": \"2026-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/jobs/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "jobs",
+                "{{job_id}}"
+              ]
+            },
+            "description": "Updates placement drive requirements, compensation package, or deadlines."
+          }
+        },
+        {
+          "name": "11. Delete Job Drive",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/jobs/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "jobs",
+                "{{job_id}}"
+              ]
+            },
+            "description": "Deletes a campus drive. Blocked with HTTP 409 Conflict if candidate applications exist."
+          }
+        },
+        {
+          "name": "12. List All Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "applications"
+              ]
+            },
+            "description": "Retrieves the complete candidate application pipeline across all campus drives."
+          }
+        },
+        {
+          "name": "13. Update Application Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Shortlisted\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/applications/{{application_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "applications",
+                "{{application_id}}",
+                "status"
+              ]
+            },
+            "description": "Updates candidate recruitment stage: Applied, Shortlisted, Interview, Selected, or Rejected."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "student_user_id",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "student_email",
+      "value": "arav.sharma@student.edu",
+      "type": "string"
+    },
+    {
+      "key": "student_password",
+      "value": "YourStudentPassword123!",
+      "type": "string"
+    },
+    {
+      "key": "admin_email",
+      "value": "admin.placement@college.edu",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "YourAdminPassword123!",
+      "type": "string"
+    },
+    {
+      "key": "company_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "skill_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "application_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
